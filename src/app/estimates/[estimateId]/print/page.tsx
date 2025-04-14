@@ -2,12 +2,9 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-export default async function Page({
-  params,
-}: {
-  params: Record<string, string>
-}) {
-  const estimate = await getEstimateById(params.estimateId)
+export default async function Page(props: any) {
+  const estimateId = props.params?.estimateId
+  const estimate = await getEstimateById(estimateId)
   if (!estimate) return notFound()
 
   return (
@@ -35,6 +32,7 @@ export default async function Page({
         {estimate.details && <p><strong>Notes:</strong> {estimate.details}</p>}
       </div>
 
+      {/* SUMMARY BY OPTION */}
       {Object.entries(estimate.options)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([label, opt]) => {
@@ -53,6 +51,7 @@ export default async function Page({
             <div key={label} className="border-t pt-4 space-y-4">
               <h4 className="font-semibold text-lg">{label}</h4>
 
+              {/* Area Type Breakdown */}
               <div className="text-sm space-y-1">
                 <h5 className="font-medium">Area Type Breakdown</h5>
                 <ul className="pl-4 list-disc">
@@ -64,10 +63,12 @@ export default async function Page({
                 </ul>
               </div>
 
+              {/* Total area */}
               <p className="text-sm">
                 <strong>Total Area:</strong> {opt.totalSqm?.toFixed(2)} sqm
               </p>
 
+              {/* Equipment Grouping */}
               {opt.equipment?.length > 0 && (
                 <div className="mt-2 space-y-4">
                   <h5 className="font-medium text-sm">Equipment & Labour</h5>
@@ -116,6 +117,7 @@ export default async function Page({
           )
         })}
 
+      {/* FOOTER */}
       <div className="pt-6 mt-6 text-sm text-muted-foreground border-t">
         <p>This estimate is valid for 30 days. Final pricing may vary based on site inspection and agreed scope.</p>
         <p className="mt-6">Signature: ____________________________</p>
