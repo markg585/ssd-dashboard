@@ -30,7 +30,6 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 
-// ✅ Use this if you've defined it in estimate.ts
 export type EquipmentCategory = 'Prep' | 'Bitumen' | 'Asphalt'
 
 type EquipmentItem = {
@@ -97,8 +96,8 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
 
   return (
     <Card>
-      <CardContent className="space-y-4 pt-6 overflow-x-auto">
-        <div className="flex justify-between items-center">
+      <CardContent className="space-y-4 pt-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <h2 className="text-lg font-semibold">Equipment & Labour</h2>
           <Button
             type="button"
@@ -116,8 +115,8 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
           </Button>
         </div>
 
-        {/* HEADER GRID */}
-        <div className="grid grid-cols-[250px_140px_80px_80px_80px_100px_40px] gap-2 text-sm font-medium text-muted-foreground">
+        {/* Header (desktop only) */}
+        <div className="hidden sm:grid grid-cols-[220px_140px_80px_80px_80px_100px_40px] gap-2 text-sm font-medium text-muted-foreground">
           <div>Item</div>
           <div>Category</div>
           <div>Units</div>
@@ -127,6 +126,7 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
           <div></div>
         </div>
 
+        {/* Equipment Rows */}
         {fields.map((field, index) => {
           const row = equipmentValues?.[index] || {}
           const totalHrs =
@@ -135,74 +135,89 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
           return (
             <div
               key={field.id}
-              className="grid grid-cols-[250px_140px_80px_80px_80px_100px_40px] gap-2 items-center"
+              className="grid sm:grid-cols-[220px_140px_80px_80px_80px_100px_40px] gap-2 items-center border border-muted rounded-lg p-4"
             >
-              {/* ITEM COMBOBOX */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full min-w-[220px] justify-start text-left truncate"
-                  >
-                    {row.item || 'Select item'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search items..." />
-                    <CommandEmpty>No match found.</CommandEmpty>
-                    <CommandGroup>
-                      {equipmentOptions
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((item) => (
-                          <CommandItem
-                            key={item.name}
-                            value={item.name}
-                            onSelect={() =>
-                              setValue(`${fieldPrefix}.${index}.item`, item.name)
-                            }
-                          >
-                            {item.name}
-                          </CommandItem>
-                        ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              {/* Item */}
+              <div className="sm:col-span-1">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-start text-left truncate"
+                    >
+                      {row.item || 'Select item'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full sm:w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search items..." />
+                      <CommandEmpty>No match found.</CommandEmpty>
+                      <CommandGroup>
+                        {equipmentOptions
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((item) => (
+                            <CommandItem
+                              key={item.name}
+                              value={item.name}
+                              onSelect={() =>
+                                setValue(`${fieldPrefix}.${index}.item`, item.name)
+                              }
+                            >
+                              {item.name}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-              {/* ✅ CATEGORY SELECT — fixed */}
-              <Select
-                value={row.category || ''}
-                onValueChange={(value: EquipmentCategory) =>
-                  setValue(`${fieldPrefix}.${index}.category`, value)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Prep">Prep</SelectItem>
-                  <SelectItem value="Bitumen">Bitumen</SelectItem>
-                  <SelectItem value="Asphalt">Asphalt</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Category */}
+              <div className="sm:col-span-1">
+                <Select
+                  value={row.category || ''}
+                  onValueChange={(value: EquipmentCategory) =>
+                    setValue(`${fieldPrefix}.${index}.category`, value)
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Prep">Prep</SelectItem>
+                    <SelectItem value="Bitumen">Bitumen</SelectItem>
+                    <SelectItem value="Asphalt">Asphalt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
+              {/* Units / Hours / Days */}
               <Input
                 type="number"
+                placeholder="Units"
+                className="w-full"
                 {...register(`${fieldPrefix}.${index}.units`, { valueAsNumber: true })}
               />
               <Input
                 type="number"
+                placeholder="Hours"
+                className="w-full"
                 {...register(`${fieldPrefix}.${index}.hours`, { valueAsNumber: true })}
               />
               <Input
                 type="number"
+                placeholder="Days"
+                className="w-full"
                 {...register(`${fieldPrefix}.${index}.days`, { valueAsNumber: true })}
               />
 
-              <div className="text-sm text-center">{totalHrs || '-'}</div>
+              {/* Total */}
+              <div className="text-sm text-center">
+                {totalHrs ? totalHrs.toFixed(1) : '-'}
+              </div>
 
+              {/* Remove */}
               <Button
                 type="button"
                 size="icon"
