@@ -3,13 +3,11 @@ import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 import type { Estimate } from '@/types/estimate'
 
-type PageProps = {
-  params: {
-    estimateId: string
-  }
-}
-
-export default async function PrintEstimatePage({ params }: PageProps) {
+export default async function PrintEstimatePage({
+  params,
+}: {
+  params: { estimateId: string }
+}) {
   const estimate: Estimate | null = await getEstimateById(params.estimateId)
   if (!estimate) return notFound()
 
@@ -38,7 +36,7 @@ export default async function PrintEstimatePage({ params }: PageProps) {
         {estimate.details && <p><strong>Notes:</strong> {estimate.details}</p>}
       </div>
 
-      {/* SUMMARY BY OPTION */}
+      {/* OPTIONS */}
       {Object.entries(estimate.options)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([label, opt]) => {
@@ -57,7 +55,7 @@ export default async function PrintEstimatePage({ params }: PageProps) {
             <div key={label} className="border-t pt-4 space-y-4">
               <h4 className="font-semibold text-lg">{label}</h4>
 
-              {/* ✅ Area Type Breakdown */}
+              {/* Area Type Breakdown */}
               <div className="text-sm space-y-1">
                 <h5 className="font-medium">Area Type Breakdown</h5>
                 <ul className="pl-4 list-disc">
@@ -69,12 +67,12 @@ export default async function PrintEstimatePage({ params }: PageProps) {
                 </ul>
               </div>
 
-              {/* ✅ Total area */}
+              {/* Total Area */}
               <p className="text-sm">
                 <strong>Total Area:</strong> {opt.totalSqm?.toFixed(2)} sqm
               </p>
 
-              {/* ✅ Equipment */}
+              {/* Equipment */}
               {opt.equipment?.length > 0 && (
                 <div className="mt-2 space-y-4">
                   <h5 className="font-medium text-sm">Equipment & Labour</h5>
