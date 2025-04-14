@@ -95,7 +95,6 @@ export default function JobEstimateForm() {
 
   const { getValues, setValue } = form
 
-
   const addNewOption = (optionName: string) => {
     setOptions(prev => [...prev, optionName])
     setActiveOption(optionName)
@@ -188,7 +187,7 @@ export default function JobEstimateForm() {
   }
 
   return (
-    <div className="space-y-6 p-4 max-w-4xl mx-auto">
+    <div className="space-y-6 px-4 py-6 max-w-4xl mx-auto sm:px-6">
       <FormProvider {...form}>
         <form
           className="space-y-6"
@@ -204,13 +203,19 @@ export default function JobEstimateForm() {
             }}
             className="space-y-4"
           >
-            <TabsList className="gap-2">
+            <TabsList className="flex flex-wrap gap-2 overflow-x-auto max-w-full">
               {options.map(opt => (
-                <TabsTrigger key={opt} value={opt}>{opt}</TabsTrigger>
+                <TabsTrigger key={opt} value={opt}>
+                  {opt}
+                </TabsTrigger>
               ))}
+            </TabsList>
+
+            <div className="mt-2">
               <Button
                 variant="ghost"
                 type="button"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   const next = `Option ${String.fromCharCode(65 + options.length)}`
                   addNewOption(next)
@@ -218,14 +223,13 @@ export default function JobEstimateForm() {
               >
                 + Add Option
               </Button>
-            </TabsList>
+            </div>
 
             {options.map(opt => (
               <TabsContent key={opt} value={opt} className="space-y-6">
                 <MeasurementsSection optionKey={opt} />
                 <EquipmentSection fieldPrefix={`options.${opt}.equipment`} />
                 <MaterialsSection optionKey={opt} />
-
               </TabsContent>
             ))}
           </Tabs>
@@ -233,7 +237,7 @@ export default function JobEstimateForm() {
           <Button
             type="button"
             disabled={saving}
-            className="w-full"
+            className="w-full sm:w-auto"
             onClick={() => onSaveAll(getValues())}
           >
             {saving ? 'Saving...' : 'Save All Options'}
