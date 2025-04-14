@@ -58,9 +58,7 @@ const formSchema = z.object({
   options: z.record(optionSchema)
 })
 
-type FormData = z.infer<typeof formSchema>
-
-type ShapeEntry = FormData['options'][string]['shapeEntries'][number]
+export type FormData = z.infer<typeof formSchema>
 
 export default function JobEstimateForm() {
   const router = useRouter()
@@ -89,7 +87,7 @@ export default function JobEstimateForm() {
     }
   })
 
-  const { getValues, setValue } = form
+  const { getValues, setValue, control, register } = form
 
   const addNewOption = (optionName: string) => {
     setOptions(prev => [...prev, optionName])
@@ -103,8 +101,8 @@ export default function JobEstimateForm() {
     })
   }
 
-  const calculateArea = (entry: ShapeEntry): number => {
-    const [a, b, c] = (entry.values ?? []).map((v) => parseFloat(v || '0'))
+  const calculateArea = (entry: any): number => {
+    const [a, b, c] = (entry.values ?? []).map((v: string) => parseFloat(v || '0'))
     switch (entry.shape) {
       case 'rectangle': return a * b
       case 'triangle': return 0.5 * a * b
@@ -123,7 +121,7 @@ export default function JobEstimateForm() {
     }
 
     const emptyShapes = Object.entries(data.options).filter(
-      ([, opt]) => opt.shapeEntries.length === 0
+      ([_, opt]) => opt.shapeEntries.length === 0
     )
 
     if (emptyShapes.length > 0) {
@@ -222,7 +220,7 @@ export default function JobEstimateForm() {
               <TabsContent key={opt} value={opt} className="space-y-6">
                 <MeasurementsSection optionKey={opt} />
                 <EquipmentSection fieldPrefix={`options.${opt}.equipment`} />
-                <MaterialsSection control={form.control} register={form.register} />
+                <MaterialsSection control={control} register={register} />
               </TabsContent>
             ))}
           </Tabs>
