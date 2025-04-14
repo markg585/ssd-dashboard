@@ -222,7 +222,7 @@ export default function JobEstimateForm() {
               <TabsContent key={opt} value={opt} className="space-y-6">
                 <MeasurementsSection optionKey={opt} />
                 <EquipmentSection fieldPrefix={`options.${opt}.equipment`} />
-                <MaterialsSection />
+                <MaterialsSection control={form.control} register={form.register} />
               </TabsContent>
             ))}
           </Tabs>
