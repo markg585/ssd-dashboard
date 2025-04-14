@@ -2,7 +2,11 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-export default async function Page({ params }: any) {
+export default async function Page({
+  params,
+}: {
+  params: Record<string, string>
+}) {
   const estimate = await getEstimateById(params.estimateId)
   if (!estimate) return notFound()
 
