@@ -3,6 +3,7 @@ import './globals.css'
 import { ReactNode } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { Toaster } from '@/components/ui/sonner' // 👈 import toast
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -19,6 +20,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Sidebar />
           <main className="flex-1 p-6">{children}</main>
         </div>
+
+        {/* ✅ Sonner Toast */}
+        <Toaster position="bottom-right" />
       </body>
     </html>
   )

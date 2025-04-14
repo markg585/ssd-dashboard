@@ -176,7 +176,7 @@ export default function JobEstimateForm() {
       })
 
       toast.success('Estimate saved!')
-      router.push('/thank-you')
+      router.push('/estimates')
     } catch (err) {
       console.error(err)
       toast.error('Save failed')
