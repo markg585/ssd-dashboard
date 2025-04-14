@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
+// --- SCHEMA + TYPES ---
 const optionSchema = z.object({
   totalSqm: z.coerce.number(),
   equipment: z.array(z.object({
@@ -60,6 +61,11 @@ const formSchema = z.object({
 
 export type FormData = z.infer<typeof formSchema>
 
+type ShapeEntry = {
+  shape: 'rectangle' | 'triangle' | 'trapezoid'
+  values: string[]
+}
+
 export default function JobEstimateForm() {
   const router = useRouter()
   const [options, setOptions] = useState(['Option A'])
@@ -87,7 +93,8 @@ export default function JobEstimateForm() {
     }
   })
 
-  const { getValues, setValue, control, register } = form
+  const { getValues, setValue } = form
+
 
   const addNewOption = (optionName: string) => {
     setOptions(prev => [...prev, optionName])
@@ -101,8 +108,8 @@ export default function JobEstimateForm() {
     })
   }
 
-  const calculateArea = (entry: any): number => {
-    const [a, b, c] = (entry.values ?? []).map((v: string) => parseFloat(v || '0'))
+  const calculateArea = (entry: ShapeEntry): number => {
+    const [a, b, c] = (entry.values ?? []).map((v) => parseFloat(v || '0'))
     switch (entry.shape) {
       case 'rectangle': return a * b
       case 'triangle': return 0.5 * a * b
@@ -120,10 +127,7 @@ export default function JobEstimateForm() {
       return
     }
 
-    const emptyShapes = Object.entries(data.options).filter(
-      ([_, opt]) => opt.shapeEntries.length === 0
-    )
-
+    const emptyShapes = Object.values(data.options).filter(opt => opt.shapeEntries.length === 0)
     if (emptyShapes.length > 0) {
       toast.error(`Each option must include at least one measurement.`)
       return
@@ -220,7 +224,8 @@ export default function JobEstimateForm() {
               <TabsContent key={opt} value={opt} className="space-y-6">
                 <MeasurementsSection optionKey={opt} />
                 <EquipmentSection fieldPrefix={`options.${opt}.equipment`} />
-                <MaterialsSection control={control} register={register} />
+                <MaterialsSection optionKey={opt} />
+
               </TabsContent>
             ))}
           </Tabs>
