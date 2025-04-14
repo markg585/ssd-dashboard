@@ -2,6 +2,7 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function Page(props: any) {
   const estimateId = props.params?.estimateId
   const estimate = await getEstimateById(estimateId)
@@ -32,7 +33,6 @@ export default async function Page(props: any) {
         {estimate.details && <p><strong>Notes:</strong> {estimate.details}</p>}
       </div>
 
-      {/* SUMMARY BY OPTION */}
       {Object.entries(estimate.options)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([label, opt]) => {
@@ -125,3 +125,4 @@ export default async function Page(props: any) {
     </div>
   )
 }
+
