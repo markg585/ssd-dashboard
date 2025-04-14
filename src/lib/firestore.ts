@@ -19,6 +19,7 @@ function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
     ref: doc.ref.path,
     customerName: data.customerName ?? '',
     customerEmail: data.customerEmail ?? '',
+    phone: data.phone ?? '', // ✅ Add this line
     address: data.address ?? '',
     details: data.details ?? '',
     createdAt: createdAt?.toISOString() ?? '',

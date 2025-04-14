@@ -169,6 +169,7 @@ export default function JobEstimateForm() {
       await addDoc(collection(db, 'customers', customerId, 'jobsites'), {
         customerName,
         customerEmail: email,
+        phone,
         address,
         details,
         options: processedOptions,

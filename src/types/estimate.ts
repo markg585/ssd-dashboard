@@ -53,6 +53,7 @@ export type Estimate = {
   ref: string
   customerName: string
   customerEmail: string
+  phone?: string // ✅ add this
   address: string
   createdAt: string
   createdAtFormatted: string
