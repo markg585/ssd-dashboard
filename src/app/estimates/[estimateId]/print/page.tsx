@@ -3,19 +3,6 @@ import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
 // --- Types ---
-type EquipmentItem = {
-  item: string
-  units: number
-  hours: number
-  days: number
-  category: string
-}
-
-type MaterialItem = {
-  item: string
-  type: string
-  sprayRate: number
-}
 
 export default async function Page({ params }: { params: { estimateId: string } }) {
   const estimateId = params.estimateId

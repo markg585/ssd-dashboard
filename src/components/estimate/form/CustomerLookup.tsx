@@ -26,10 +26,10 @@ export default function CustomerLookup() {
   useEffect(() => {
     const fetchCustomers = async () => {
       const snap = await getDocs(collection(db, 'customers'))
-      const list = snap.docs.map((doc) => {
-        const data = doc.data() as Customer
-        return { ...data, id: doc.id }
-      })
+      const list: Customer[] = snap.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Omit<Customer, 'id'>),
+      }))
       setCustomers(list)
     }
 
@@ -38,7 +38,7 @@ export default function CustomerLookup() {
 
   const filtered = query.length === 0
     ? []
-    : customers.filter(c =>
+    : customers.filter((c) =>
         `${c.firstName} ${c.lastName}`.toLowerCase().includes(query.toLowerCase()) ||
         c.email.toLowerCase().includes(query.toLowerCase())
       )
@@ -50,7 +50,7 @@ export default function CustomerLookup() {
     setValue('lastName', customer.lastName)
     setValue('email', customer.email)
     setValue('phone', customer.phone)
-    setValue('customerId' as any, customer.id) // 👈 bypass schema type
+    setValue('customerId', customer.id) // ✅ no `as any` needed
   }
 
   return (
@@ -81,4 +81,5 @@ export default function CustomerLookup() {
     </div>
   )
 }
+
 
