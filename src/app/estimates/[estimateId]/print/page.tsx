@@ -44,9 +44,13 @@ export default async function Page(props: any) {
       {/* CUSTOMER INFO */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold mb-2">Customer</h3>
-        <p><strong>Name:</strong> {typedEstimate.customerName}</p>
+        <p><strong>Name:</strong> {typedEstimate.firstName} {typedEstimate.lastName}</p>
         <p><strong>Email:</strong> {typedEstimate.customerEmail}</p>
-        <p><strong>Address:</strong> {typedEstimate.address}</p>
+        <p>
+          <strong>Address:</strong>{' '}
+          {typedEstimate.address.street}, {typedEstimate.address.suburb}{' '}
+          {typedEstimate.address.state} {typedEstimate.address.postcode}
+        </p>
         {typedEstimate.details && <p><strong>Notes:</strong> {typedEstimate.details}</p>}
       </div>
 
@@ -162,4 +166,5 @@ export default async function Page(props: any) {
     </div>
   )
 }
+
 

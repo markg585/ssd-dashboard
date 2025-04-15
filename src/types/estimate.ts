@@ -5,10 +5,16 @@ import { z } from 'zod'
 // ---------------------------------------------
 
 export const formSchema = z.object({
-  customerName: z.string(),
-  address: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
   phone: z.string(),
   email: z.string().email(),
+  address: z.object({
+    street: z.string(),
+    suburb: z.string(),
+    postcode: z.string(),
+    state: z.string(),
+  }),
   details: z.string().optional(),
   options: z.record(
     z.object({
@@ -34,15 +40,11 @@ export const formSchema = z.object({
         label: z.string(),
         values: z.array(z.string()),
         areaTypes: z.array(z.string()),
-        area: z.number().optional(), // this gets injected before saving
+        area: z.number().optional(),
       })),
     })
   )
 })
-
-// ---------------------------------------------
-// 🧠 Types
-// ---------------------------------------------
 
 export type FormData = z.infer<typeof formSchema>
 
@@ -51,12 +53,19 @@ export type EstimateOption = FormData['options'][string]
 export type Estimate = {
   id: string
   ref: string
-  customerName: string
+  firstName: string
+  lastName: string
   customerEmail: string
-  phone?: string // ✅ add this
-  address: string
+  phone?: string
+  address: {
+    street: string
+    suburb: string
+    postcode: string
+    state: string
+  }
   createdAt: string
   createdAtFormatted: string
   options: Record<string, EstimateOption>
   details?: string
 }
+

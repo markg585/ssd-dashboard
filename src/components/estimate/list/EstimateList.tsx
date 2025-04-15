@@ -43,26 +43,33 @@ export function EstimateList({ estimates }: Props) {
     }
   }
 
+  // 🔁 Customer dropdown list (first + last name)
   const customers = useMemo(() => {
-    return Array.from(new Set(estimates.map((e) => e.customerName))).sort()
+    return Array.from(
+      new Set(estimates.map((e) => `${e.firstName} ${e.lastName}`))
+    ).sort()
   }, [estimates])
 
+  // 🔍 Filtered list based on search and filter
   const filtered = useMemo(() => {
     return data
       .filter((est) => {
+        const fullName = `${est.firstName} ${est.lastName}`
+        const addressText = `${est.address.street} ${est.address.suburb} ${est.address.state} ${est.address.postcode}`
+
         const matchSearch =
-          est.customerName.toLowerCase().includes(search.toLowerCase()) ||
+          fullName.toLowerCase().includes(search.toLowerCase()) ||
           est.customerEmail.toLowerCase().includes(search.toLowerCase()) ||
-          est.address.toLowerCase().includes(search.toLowerCase())
+          addressText.toLowerCase().includes(search.toLowerCase())
 
         const matchCustomer =
           !customerFilter || customerFilter === '__all__'
             ? true
-            : est.customerName === customerFilter
+            : fullName === customerFilter
 
         return matchSearch && matchCustomer
       })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // ✅ Sort by newest
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [data, search, customerFilter])
 
   return (
@@ -107,39 +114,43 @@ export function EstimateList({ estimates }: Props) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((est, idx) => (
-              <TableRow
-                key={est.id}
-                className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/50'}
-              >
-                <TableCell>{est.createdAtFormatted}</TableCell>
-                <TableCell className="font-medium">{est.customerName}</TableCell>
-                <TableCell>{est.address || '—'}</TableCell>
-                <TableCell>{est.customerEmail || '—'}</TableCell>
-                <TableCell>{est.phone || '—'}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2 flex-wrap">
-                    <Link href={`/estimates/${est.id}/review`}>
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4 mr-1" /> View
+            {filtered.map((est, idx) => {
+              const fullName = `${est.firstName} ${est.lastName}`
+              const address = `${est.address.street}, ${est.address.suburb} ${est.address.state} ${est.address.postcode}`
+              return (
+                <TableRow
+                  key={est.id}
+                  className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/50'}
+                >
+                  <TableCell>{est.createdAtFormatted}</TableCell>
+                  <TableCell className="font-medium">{fullName}</TableCell>
+                  <TableCell>{address || '—'}</TableCell>
+                  <TableCell>{est.customerEmail || '—'}</TableCell>
+                  <TableCell>{est.phone || '—'}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2 flex-wrap">
+                      <Link href={`/estimates/${est.id}/review`}>
+                        <Button size="sm" variant="outline">
+                          <Eye className="w-4 h-4 mr-1" /> View
+                        </Button>
+                      </Link>
+                      <Link href={`/estimates/${est.id}/print`}>
+                        <Button size="sm" variant="secondary">
+                          <Printer className="w-4 h-4 mr-1" /> Print
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(est.ref)}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                    </Link>
-                    <Link href={`/estimates/${est.id}/print`}>
-                      <Button size="sm" variant="secondary">
-                        <Printer className="w-4 h-4 mr-1" /> Print
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(est.ref)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
@@ -153,3 +164,4 @@ export function EstimateList({ estimates }: Props) {
     </div>
   )
 }
+

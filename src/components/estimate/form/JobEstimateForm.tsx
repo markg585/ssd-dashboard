@@ -8,8 +8,7 @@ import {
   addDoc,
   collection,
   doc,
-  setDoc,
-  serverTimestamp
+  serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
@@ -24,39 +23,44 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 
-const optionSchema = z.object({
-  key: z.string(),
-  label: z.string(),
-  totalSqm: z.coerce.number(),
-  equipment: z.array(z.object({
-    item: z.string(),
-    category: z.enum(['Prep', 'Asphalt', 'Seal', 'General']),
-    price: z.coerce.number().optional(),
-    units: z.coerce.number(),
-    hours: z.coerce.number(),
-    days: z.coerce.number(),
-  })),
-  materials: z.array(z.object({
-    item: z.string(),
-    type: z.string(),
-    sprayRate: z.coerce.number(),
-  })),
-  shapeEntries: z.array(z.object({
-    id: z.string(),
-    shape: z.enum(['rectangle', 'triangle', 'trapezoid']),
-    label: z.string(),
-    values: z.array(z.string()),
-    areaTypes: z.array(z.string())
-  }))
-})
-
+// ✅ Updated schema with structured address + names
 const formSchema = z.object({
-  customerName: z.string(),
-  address: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
   phone: z.string(),
   email: z.string().email(),
   details: z.string().optional(),
-  options: z.array(optionSchema)
+  address: z.object({
+    street: z.string(),
+    suburb: z.string(),
+    postcode: z.string(),
+    state: z.string(),
+  }),
+  options: z.array(z.object({
+    key: z.string(),
+    label: z.string(),
+    totalSqm: z.coerce.number(),
+    equipment: z.array(z.object({
+      item: z.string(),
+      category: z.enum(['Prep', 'Asphalt', 'Seal', 'General']),
+      price: z.coerce.number().optional(),
+      units: z.coerce.number(),
+      hours: z.coerce.number(),
+      days: z.coerce.number(),
+    })),
+    materials: z.array(z.object({
+      item: z.string(),
+      type: z.string(),
+      sprayRate: z.coerce.number(),
+    })),
+    shapeEntries: z.array(z.object({
+      id: z.string(),
+      shape: z.enum(['rectangle', 'triangle', 'trapezoid']),
+      label: z.string(),
+      values: z.array(z.string()),
+      areaTypes: z.array(z.string()),
+    }))
+  }))
 })
 
 export type FormData = z.infer<typeof formSchema>
@@ -70,11 +74,17 @@ export default function JobEstimateForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerName: '',
-      address: '',
+      firstName: '',
+      lastName: '',
       phone: '',
       email: '',
       details: '',
+      address: {
+        street: '',
+        suburb: '',
+        postcode: '',
+        state: '',
+      },
       options: [
         {
           key: 'option-a',
@@ -82,10 +92,10 @@ export default function JobEstimateForm() {
           totalSqm: 0,
           equipment: [],
           materials: [],
-          shapeEntries: []
-        }
-      ]
-    }
+          shapeEntries: [],
+        },
+      ],
+    },
   })
 
   const { getValues, register, control } = form
@@ -101,7 +111,7 @@ export default function JobEstimateForm() {
       totalSqm: 0,
       equipment: [],
       materials: [],
-      shapeEntries: []
+      shapeEntries: [],
     })
     setActiveKey(key)
   }
@@ -113,13 +123,17 @@ export default function JobEstimateForm() {
     }
   }
 
-  const calculateArea = (entry: { shape: string, values: string[] }): number => {
+  const calculateArea = (entry: { shape: string; values: string[] }): number => {
     const [a, b, c] = (entry.values ?? []).map((v) => parseFloat(v || '0'))
     switch (entry.shape) {
-      case 'rectangle': return a * b
-      case 'triangle': return 0.5 * a * b
-      case 'trapezoid': return 0.5 * (a + b) * c
-      default: return 0
+      case 'rectangle':
+        return a * b
+      case 'triangle':
+        return 0.5 * a * b
+      case 'trapezoid':
+        return 0.5 * (a + b) * c
+      default:
+        return 0
     }
   }
 
@@ -137,33 +151,39 @@ export default function JobEstimateForm() {
 
     try {
       const {
-        customerName,
+        firstName,
+        lastName,
         phone,
         email,
         address,
         details,
-        options
+        options,
       } = data
 
-      const customerId = email.toLowerCase().replace(/[@.]/g, '-')
-
-      await setDoc(doc(db, 'customers', customerId), {
-        name: customerName,
+      // ✅ Create customer doc with auto-ID
+      const customerRef = await addDoc(collection(db, 'customers'), {
+        firstName,
+        lastName,
         phone,
         email,
-        updatedAt: serverTimestamp(),
-      }, { merge: true })
+        address,
+        createdAt: serverTimestamp(),
+      })
 
+      // ✅ Process each option and add area calc
       const processedOptions = options.map(option => ({
         ...option,
         shapeEntries: option.shapeEntries.map((entry) => ({
           ...entry,
-          area: parseFloat(calculateArea(entry).toFixed(2))
-        }))
+          area: parseFloat(calculateArea(entry).toFixed(2)),
+        })),
       }))
 
-      await addDoc(collection(db, 'customers', customerId, 'jobsites'), {
-        customerName,
+      // ✅ Create jobsite under this customer
+      await addDoc(collection(customerRef, 'jobsites'), {
+        customerId: customerRef.id, // helpful for reverse lookup
+        firstName,
+        lastName,
         customerEmail: email,
         phone,
         address,

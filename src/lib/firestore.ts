@@ -18,10 +18,16 @@ function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
   return {
     id: doc.id,
     ref: doc.ref.path,
-    customerName: data.customerName ?? '',
+    firstName: data.firstName ?? '',
+    lastName: data.lastName ?? '',
     customerEmail: data.customerEmail ?? '',
     phone: data.phone ?? '',
-    address: data.address ?? '',
+    address: {
+      street: data.address?.street ?? '',
+      suburb: data.address?.suburb ?? '',
+      postcode: data.address?.postcode ?? '',
+      state: data.address?.state ?? '',
+    },
     details: data.details ?? '',
     createdAt: createdAt?.toISOString() ?? '',
     createdAtFormatted: createdAt
