@@ -2,8 +2,10 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function Page({ params }: { params: any }) {
   const estimate = await getEstimateById(params.estimateId)
+
   if (!estimate) return notFound()
 
   const addr = estimate.jobsiteAddress || {}
@@ -43,9 +45,12 @@ export default async function Page({ params }: { params: any }) {
           <p className="mt-2"><strong>Job Notes:</strong> {estimate.details}</p>
         )}
       </div>
+
+      {/* You can continue rendering estimate.options below if needed */}
     </div>
   )
 }
+
 
 
 
