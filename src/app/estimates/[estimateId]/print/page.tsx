@@ -2,22 +2,18 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-type PageProps = {
-  params: {
-    estimateId: string
-  }
+interface PageProps {
+  params: { estimateId: string }
 }
 
 export default async function Page({ params }: PageProps) {
-  const estimateId = params.estimateId
-  const estimate = await getEstimateById(estimateId)
-
+  const estimate = await getEstimateById(params.estimateId)
   if (!estimate) return notFound()
-  console.log('🖨️ Print Estimate:', estimate)
 
-  const typedEstimate = estimate as NonNullable<typeof estimate>
-  const addr = typedEstimate.jobsiteAddress || {}
-  const jobsiteAddressText = [addr.street, addr.suburb, addr.state, addr.postcode].filter(Boolean).join(', ') || '—'
+  const addr = estimate.jobsiteAddress || {}
+  const jobsiteAddressText = [addr.street, addr.suburb, addr.state, addr.postcode]
+    .filter(Boolean)
+    .join(', ') || '—'
 
   return (
     <div className="print-only max-w-3xl mx-auto p-6 space-y-8">
@@ -31,29 +27,29 @@ export default async function Page({ params }: PageProps) {
         </div>
         <div className="text-right">
           <h2 className="text-lg font-semibold">Job Estimate</h2>
-          <p className="text-sm text-muted-foreground">{typedEstimate.createdAtFormatted}</p>
+          <p className="text-sm text-muted-foreground">{estimate.createdAtFormatted}</p>
         </div>
       </div>
 
       {/* CUSTOMER INFO */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold mb-2">Customer</h3>
-        <p><strong>Name:</strong> {typedEstimate.firstName} {typedEstimate.lastName}</p>
-        <p><strong>Email:</strong> {typedEstimate.customerEmail}</p>
-        <p><strong>Phone:</strong> {typedEstimate.phone}</p>
+        <p><strong>Name:</strong> {estimate.firstName} {estimate.lastName}</p>
+        <p><strong>Email:</strong> {estimate.customerEmail}</p>
+        <p><strong>Phone:</strong> {estimate.phone}</p>
       </div>
 
       {/* JOBSITE ADDRESS */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold mb-2">Jobsite Address</h3>
         <p>{jobsiteAddressText}</p>
-        {typedEstimate.details && (
-          <p className="mt-2"><strong>Job Notes:</strong> {typedEstimate.details}</p>
+        {estimate.details && (
+          <p className="mt-2"><strong>Job Notes:</strong> {estimate.details}</p>
         )}
       </div>
 
       {/* ESTIMATE OPTIONS */}
-      {Array.isArray(typedEstimate.options) && typedEstimate.options.map((opt, index) => {
+      {Array.isArray(estimate.options) && estimate.options.map((opt, index) => {
         const areaByType: Record<string, number> = {}
         opt.shapeEntries?.forEach((shape) => {
           const area = shape.area || 0
@@ -61,7 +57,6 @@ export default async function Page({ params }: PageProps) {
             areaByType[type] = (areaByType[type] || 0) + area
           })
         })
-
         const usedTypes = Object.entries(areaByType).filter(([, total]) => total > 0)
 
         return (
@@ -80,12 +75,12 @@ export default async function Page({ params }: PageProps) {
               </ul>
             </div>
 
-            {/* Total area */}
+            {/* Total Area */}
             <p className="text-sm">
               <strong>Total Area:</strong> {opt.totalSqm?.toFixed(2)} sqm
             </p>
 
-            {/* Equipment */}
+            {/* Equipment Grouping */}
             {opt.equipment?.length > 0 && (
               <div className="mt-2 space-y-4">
                 <h5 className="font-medium text-sm">Equipment & Labour</h5>
@@ -104,7 +99,7 @@ export default async function Page({ params }: PageProps) {
                           <div>Total Hrs</div>
                         </div>
                         {items.map((eq, idx) => {
-                          const totalHrs = Number(eq.units || 0) * Number(eq.hours || 0) * Number(eq.days || 0)
+                          const totalHrs = eq.units * eq.hours * eq.days
                           return (
                             <div key={idx} className="grid grid-cols-5 px-3 py-2 border-t text-xs">
                               <div>{eq.item || '-'}</div>
@@ -154,5 +149,6 @@ export default async function Page({ params }: PageProps) {
     </div>
   )
 }
+
 
 
