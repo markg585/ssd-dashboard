@@ -2,14 +2,8 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-type PageProps = {
-  params: {
-    estimateId: string
-  }
-}
-
-export default async function Page({ params }: PageProps) {
-  const estimate = await getEstimateById(params.estimateId)
+export default async function Page(props: { params: { estimateId: string } }) {
+  const estimate = await getEstimateById(props.params.estimateId)
 
   if (!estimate) return notFound()
 
@@ -22,7 +16,6 @@ export default async function Page({ params }: PageProps) {
     <div className="print-only max-w-3xl mx-auto p-6 space-y-8">
       <PrintToolbar />
 
-      {/* HEADER */}
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold">SCSD</h1>
@@ -34,7 +27,6 @@ export default async function Page({ params }: PageProps) {
         </div>
       </div>
 
-      {/* CUSTOMER INFO */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold mb-2">Customer</h3>
         <p><strong>Name:</strong> {estimate.firstName} {estimate.lastName}</p>
@@ -42,7 +34,6 @@ export default async function Page({ params }: PageProps) {
         <p><strong>Phone:</strong> {estimate.phone}</p>
       </div>
 
-      {/* JOBSITE ADDRESS */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold mb-2">Jobsite Address</h3>
         <p>{jobsiteAddressText}</p>
@@ -51,9 +42,10 @@ export default async function Page({ params }: PageProps) {
         )}
       </div>
 
-      {/* More sections here if needed */}
+      {/* you can continue rendering estimate.options here */}
     </div>
   )
 }
+
 
 
