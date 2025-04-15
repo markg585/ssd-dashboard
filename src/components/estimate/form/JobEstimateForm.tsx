@@ -39,9 +39,7 @@ const optionSchema = z.object({
   materials: z.array(z.object({
     item: z.string(),
     type: z.string(),
-    sqm: z.coerce.number(),
     sprayRate: z.coerce.number(),
-    price: z.coerce.number(),
   })),
   shapeEntries: z.array(z.object({
     id: z.string(),

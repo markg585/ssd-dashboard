@@ -2,6 +2,21 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
+// --- Types ---
+type EquipmentItem = {
+  item: string
+  units: number
+  hours: number
+  days: number
+  category: string
+}
+
+type MaterialItem = {
+  item: string
+  type: string
+  sprayRate: number
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function Page(props: any) {
   const estimateId = props.params?.estimateId
@@ -35,6 +50,7 @@ export default async function Page(props: any) {
         {typedEstimate.details && <p><strong>Notes:</strong> {typedEstimate.details}</p>}
       </div>
 
+      {/* ESTIMATE OPTIONS */}
       {Array.isArray(typedEstimate.options) && typedEstimate.options.map((opt, index: number) => {
         const areaByType: Record<string, number> = {}
 
@@ -74,7 +90,7 @@ export default async function Page(props: any) {
                 <h5 className="font-medium text-sm">Equipment & Labour</h5>
 
                 {['Prep', 'Bitumen', 'Asphalt'].map((category: string) => {
-                  const items = opt.equipment.filter((eq: typeof opt.equipment[number]) => eq.category === category)
+                  const items = opt.equipment.filter((eq: EquipmentItem) => eq.category === category)
                   if (items.length === 0) return null
 
                   return (
@@ -88,11 +104,8 @@ export default async function Page(props: any) {
                           <div>Days</div>
                           <div>Total Hrs</div>
                         </div>
-                        {items.map((eq: typeof opt.equipment[number], idx: number) => {
-                          const totalHrs =
-                            Number(eq.units || 0) *
-                            Number(eq.hours || 0) *
-                            Number(eq.days || 0)
+                        {items.map((eq: EquipmentItem, idx: number) => {
+                          const totalHrs = Number(eq.units || 0) * Number(eq.hours || 0) * Number(eq.days || 0)
 
                           return (
                             <div
@@ -111,6 +124,30 @@ export default async function Page(props: any) {
                     </div>
                   )
                 })}
+              </div>
+            )}
+
+            {/* Materials */}
+            {opt.materials?.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h5 className="font-medium text-sm">Materials</h5>
+                <div className="border text-sm rounded-md overflow-hidden">
+                  <div className="grid grid-cols-3 bg-muted px-3 py-2 font-medium text-xs uppercase text-muted-foreground">
+                    <div>Item</div>
+                    <div>Type</div>
+                    <div>Spray Rate</div>
+                  </div>
+                  {opt.materials.map((mat: MaterialItem, idx: number) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-3 px-3 py-2 border-t text-xs"
+                    >
+                      <div>{mat.item || '-'}</div>
+                      <div>{mat.type || '-'}</div>
+                      <div>{mat.sprayRate || '-'}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

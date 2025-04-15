@@ -1,21 +1,40 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useFormContext, useFieldArray } from 'react-hook-form'
 import type { FormData } from './JobEstimateForm'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { getMaterialsList } from '@/lib/firestore'
+import { Trash2 } from 'lucide-react'
 
 type Props = {
   optionIndex: number
 }
 
 export default function MaterialsSection({ optionIndex }: Props) {
-  const { control, register } = useFormContext<FormData>()
-  const { fields, append } = useFieldArray({
+  const { control, register, setValue } = useFormContext<FormData>()
+  const { fields, append, remove } = useFieldArray({
     control,
     name: `options.${optionIndex}.materials` as const,
   })
+
+  const [materialOptions, setMaterialOptions] = useState<{ item: string; type: string }[]>([])
+
+  useEffect(() => {
+    getMaterialsList().then((data) =>
+      setMaterialOptions(data.sort((a, b) => a.item.localeCompare(b.item)))
+    )
+  }, [])
 
   return (
     <Card>
@@ -28,9 +47,7 @@ export default function MaterialsSection({ optionIndex }: Props) {
               append({
                 item: '',
                 type: '',
-                sqm: 0,
-                sprayRate: 0,
-                price: 0,
+                sprayRate: 0, // ✅ Safe default
               })
             }
           >
@@ -38,35 +55,74 @@ export default function MaterialsSection({ optionIndex }: Props) {
           </Button>
         </div>
 
-        {fields.map((field, index) => (
-          <div key={field.id} className="grid grid-cols-5 gap-2 items-end">
-            <Input
-              placeholder="Item"
-              {...register(`options.${optionIndex}.materials.${index}.item`)}
-            />
-            <Input
-              placeholder="Type"
-              {...register(`options.${optionIndex}.materials.${index}.type`)}
-            />
-            <Input
-              type="number"
-              placeholder="SQM"
-              {...register(`options.${optionIndex}.materials.${index}.sqm`, { valueAsNumber: true })}
-            />
-            <Input
-              type="number"
-              placeholder="Spray Rate"
-              {...register(`options.${optionIndex}.materials.${index}.sprayRate`, { valueAsNumber: true })}
-            />
-            <Input
-              type="number"
-              placeholder="Price"
-              {...register(`options.${optionIndex}.materials.${index}.price`, { valueAsNumber: true })}
-            />
-          </div>
-        ))}
+        <div className="space-y-2">
+          {fields.map((field, index) => (
+            <div
+              key={field.id}
+              className="grid md:grid-cols-12 gap-3 items-end border rounded-lg p-3"
+            >
+              <div className="md:col-span-4 space-y-1">
+                <Label>Item</Label>
+                <Select
+                  onValueChange={(val) => {
+                    const found = materialOptions.find((m) => m.item === val)
+                    setValue(`options.${optionIndex}.materials.${index}.item`, val)
+                    if (found) {
+                      setValue(`options.${optionIndex}.materials.${index}.type`, found.type)
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select material" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {materialOptions.map((mat) => (
+                      <SelectItem key={mat.item} value={mat.item}>
+                        {mat.item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="md:col-span-4 space-y-1">
+                <Label>Type</Label>
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  className="focus-visible:ring-0 focus-visible:ring-transparent"
+                  {...register(`options.${optionIndex}.materials.${index}.type`)}
+                />
+              </div>
+
+              <div className="md:col-span-3 space-y-1">
+                <Label>Spray Rate / Depth</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  {...register(`options.${optionIndex}.materials.${index}.sprayRate`)}
+                  onFocus={(e) => {
+                    if (e.target.value === '0') {
+                      e.target.value = ''
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="md:col-span-1 flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => remove(index)}
+                  className="text-red-500"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )
 }
-
