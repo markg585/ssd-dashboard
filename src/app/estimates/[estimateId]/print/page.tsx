@@ -1,10 +1,14 @@
 import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
-import type { EstimateOption } from '@/types/estimate'
 
-export default async function Page({ params }: { params: { estimateId: string } }) {
+interface PageParams {
+  estimateId: string
+}
+
+export default async function Page({ params }: { params: PageParams }) {
   const estimate = await getEstimateById(params.estimateId)
+
   if (!estimate) return notFound()
 
   const addr = estimate.jobsiteAddress || {}
@@ -45,7 +49,7 @@ export default async function Page({ params }: { params: { estimateId: string } 
 
       {/* ESTIMATE OPTIONS */}
       {Array.isArray(estimate.options) &&
-        estimate.options.map((opt: EstimateOption, index: number) => {
+        estimate.options.map((opt, index) => {
           const areaByType: Record<string, number> = {}
           opt.shapeEntries?.forEach((shape) => {
             const area = shape.area || 0
@@ -137,7 +141,6 @@ export default async function Page({ params }: { params: { estimateId: string } 
           )
         })}
 
-      {/* FOOTER */}
       <div className="pt-6 mt-6 text-sm text-muted-foreground border-t">
         <p>This estimate is valid for 30 days. Final pricing may vary based on site inspection and agreed scope.</p>
         <p className="mt-6">Signature: ____________________________</p>
@@ -145,3 +148,4 @@ export default async function Page({ params }: { params: { estimateId: string } 
     </div>
   )
 }
+
