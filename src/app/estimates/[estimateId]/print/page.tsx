@@ -46,12 +46,16 @@ export default async function Page(props: any) {
         <h3 className="font-semibold mb-2">Customer</h3>
         <p><strong>Name:</strong> {typedEstimate.firstName} {typedEstimate.lastName}</p>
         <p><strong>Email:</strong> {typedEstimate.customerEmail}</p>
+        <p><strong>Phone:</strong> {typedEstimate.phone}</p>
+      </div>
+
+      {/* JOBSITE ADDRESS */}
+      <div className="border p-4 rounded-md">
+        <h3 className="font-semibold mb-2">Jobsite Address</h3>
         <p>
-          <strong>Address:</strong>{' '}
-          {typedEstimate.address.street}, {typedEstimate.address.suburb}{' '}
-          {typedEstimate.address.state} {typedEstimate.address.postcode}
+          {typedEstimate.address.street}, {typedEstimate.address.suburb}, {typedEstimate.address.state} {typedEstimate.address.postcode}
         </p>
-        {typedEstimate.details && <p><strong>Notes:</strong> {typedEstimate.details}</p>}
+        {typedEstimate.details && <p className="mt-2"><strong>Job Notes:</strong> {typedEstimate.details}</p>}
       </div>
 
       {/* ESTIMATE OPTIONS */}
@@ -166,5 +170,6 @@ export default async function Page(props: any) {
     </div>
   )
 }
+
 
 

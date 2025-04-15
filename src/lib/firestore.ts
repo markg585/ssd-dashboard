@@ -10,6 +10,16 @@ import {
 } from 'firebase/firestore'
 import type { Estimate, EstimateOption } from '@/types/estimate'
 
+// 🔧 Format address into display string if needed
+export function formatAddress(addr: {
+  street?: string
+  suburb?: string
+  state?: string
+  postcode?: string
+}) {
+  return [addr.street, addr.suburb, addr.state, addr.postcode].filter(Boolean).join(', ')
+}
+
 // 🔁 Transform Firestore doc into Estimate shape
 function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
   const data = doc.data()
@@ -23,10 +33,10 @@ function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
     customerEmail: data.customerEmail ?? '',
     phone: data.phone ?? '',
     address: {
-      street: data.address?.street ?? '',
-      suburb: data.address?.suburb ?? '',
-      postcode: data.address?.postcode ?? '',
-      state: data.address?.state ?? '',
+      street: data.jobsiteAddress?.street ?? '',
+      suburb: data.jobsiteAddress?.suburb ?? '',
+      postcode: data.jobsiteAddress?.postcode ?? '',
+      state: data.jobsiteAddress?.state ?? '',
     },
     details: data.details ?? '',
     createdAt: createdAt?.toISOString() ?? '',
@@ -67,3 +77,4 @@ export async function getMaterialsList() {
     })
   }))
 }
+

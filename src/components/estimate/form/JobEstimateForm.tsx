@@ -13,23 +13,26 @@ import { db } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 
 import CustomerDetails from '@/components/estimate/form/CustomerDetails'
+import CustomerLookup from '@/components/estimate/form/CustomerLookup'
 import EquipmentSection from '@/components/estimate/form/EquipmentSection'
 import MaterialsSection from '@/components/estimate/form/MaterialsSection'
 import MeasurementsSection from '@/components/estimate/form/MeasurementsSection'
+import JobsiteAddress from '@/components/estimate/form/JobsiteAddress'
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 
-// ✅ Updated schema with structured address + names
 const formSchema = z.object({
+  customerId: z.string().optional(),
   firstName: z.string(),
   lastName: z.string(),
   phone: z.string(),
   email: z.string().email(),
   details: z.string().optional(),
-  address: z.object({
+  jobsiteAddress: z.object({
     street: z.string(),
     suburb: z.string(),
     postcode: z.string(),
@@ -73,12 +76,13 @@ export default function JobEstimateForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      customerId: undefined,
       firstName: '',
       lastName: '',
       phone: '',
       email: '',
       details: '',
-      address: {
+      jobsiteAddress: {
         street: '',
         suburb: '',
         postcode: '',
@@ -125,14 +129,10 @@ export default function JobEstimateForm() {
   const calculateArea = (entry: { shape: string; values: string[] }): number => {
     const [a, b, c] = (entry.values ?? []).map((v) => parseFloat(v || '0'))
     switch (entry.shape) {
-      case 'rectangle':
-        return a * b
-      case 'triangle':
-        return 0.5 * a * b
-      case 'trapezoid':
-        return 0.5 * (a + b) * c
-      default:
-        return 0
+      case 'rectangle': return a * b
+      case 'triangle': return 0.5 * a * b
+      case 'trapezoid': return 0.5 * (a + b) * c
+      default: return 0
     }
   }
 
@@ -150,26 +150,29 @@ export default function JobEstimateForm() {
 
     try {
       const {
+        customerId,
         firstName,
         lastName,
         phone,
         email,
-        address,
         details,
+        jobsiteAddress,
         options,
       } = data
 
-      // ✅ Create customer doc with auto-ID
-      const customerRef = await addDoc(collection(db, 'customers'), {
-        firstName,
-        lastName,
-        phone,
-        email,
-        address,
-        createdAt: serverTimestamp(),
-      })
+      let finalCustomerId = customerId
 
-      // ✅ Process each option and add area calc
+      if (!finalCustomerId) {
+        const customerRef = await addDoc(collection(db, 'customers'), {
+          firstName,
+          lastName,
+          phone,
+          email,
+          createdAt: serverTimestamp(),
+        })
+        finalCustomerId = customerRef.id
+      }
+
       const processedOptions = options.map(option => ({
         ...option,
         shapeEntries: option.shapeEntries.map((entry) => ({
@@ -178,15 +181,14 @@ export default function JobEstimateForm() {
         })),
       }))
 
-      // ✅ Create jobsite under this customer
-      await addDoc(collection(customerRef, 'jobsites'), {
-        customerId: customerRef.id, // helpful for reverse lookup
+      await addDoc(collection(db, 'customers', finalCustomerId, 'jobsites'), {
+        customerId: finalCustomerId,
         firstName,
         lastName,
         customerEmail: email,
         phone,
-        address,
         details,
+        jobsiteAddress,
         options: processedOptions,
         createdAt: serverTimestamp(),
       })
@@ -209,57 +211,77 @@ export default function JobEstimateForm() {
           className="space-y-6"
           onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
         >
-          <CustomerDetails />
+          <CustomerLookup />
 
-          <Tabs
-            value={activeKey}
-            onValueChange={(val) => setActiveKey(val)}
-            className="space-y-4"
-          >
-            <TabsList className="flex flex-wrap gap-2 overflow-x-auto max-w-full">
-              {fields.map((field, index) => (
-                <div key={field.key} className="relative">
-                  <TabsTrigger value={field.key} className="pr-6 pl-3">
-                    <span>{optionValues?.[index]?.label || field.label}</span>
-                  </TabsTrigger>
-                  {fields.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => deleteOption(index, field.key)}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive text-xs"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-            </TabsList>
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <h3 className="text-lg font-semibold">Customer Info</h3>
+              <CustomerDetails />
+            </CardContent>
+          </Card>
 
-            <div className="mt-2">
-              <Button
-                variant="ghost"
-                type="button"
-                className="w-full sm:w-auto"
-                onClick={addNewOption}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <h3 className="text-lg font-semibold">Jobsite Address</h3>
+              <JobsiteAddress />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6 space-y-6">
+              <h3 className="text-lg font-semibold">Estimate Options</h3>
+
+              <Tabs
+                value={activeKey}
+                onValueChange={(val) => setActiveKey(val)}
+                className="space-y-4"
               >
-                + Add Option
-              </Button>
-            </div>
+                <TabsList className="flex flex-wrap gap-2 overflow-x-auto max-w-full">
+                  {fields.map((field, index) => (
+                    <div key={field.key} className="relative">
+                      <TabsTrigger value={field.key} className="pr-6 pl-3">
+                        <span>{optionValues?.[index]?.label || field.label}</span>
+                      </TabsTrigger>
+                      {fields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => deleteOption(index, field.key)}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive text-xs"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </TabsList>
 
-            {fields.map((field, index) => (
-              <TabsContent key={field.key} value={field.key} className="space-y-6">
-                <Input
-                  {...register(`options.${index}.label`)}
-                  autoComplete="off"
-                  placeholder="Label (e.g. Front Driveway)"
-                  className="max-w-sm"
-                />
-                <MeasurementsSection optionIndex={index} />
-                <EquipmentSection fieldPrefix={`options.${index}.equipment`} />
-                <MaterialsSection optionIndex={index} />
-              </TabsContent>
-            ))}
-          </Tabs>
+                <div className="mt-2">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    className="w-full sm:w-auto"
+                    onClick={addNewOption}
+                  >
+                    + Add Option
+                  </Button>
+                </div>
+
+                {fields.map((field, index) => (
+                  <TabsContent key={field.key} value={field.key} className="space-y-6">
+                    <Input
+                      {...register(`options.${index}.label`)}
+                      autoComplete="off"
+                      placeholder="Label (e.g. Front Driveway)"
+                      className="max-w-sm"
+                    />
+                    <MeasurementsSection optionIndex={index} />
+                    <EquipmentSection fieldPrefix={`options.${index}.equipment`} />
+                    <MaterialsSection optionIndex={index} />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
 
           <Button
             type="button"
@@ -274,3 +296,5 @@ export default function JobEstimateForm() {
     </div>
   )
 }
+
+
