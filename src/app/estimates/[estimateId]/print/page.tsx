@@ -2,17 +2,21 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-export default async function Page({
-  params,
-}: {
-  params: { estimateId: string }
-}) {
+type PageProps = {
+  params: {
+    estimateId: string
+  }
+}
+
+export default async function Page({ params }: PageProps) {
   const estimate = await getEstimateById(params.estimateId)
 
   if (!estimate) return notFound()
 
   const addr = estimate.jobsiteAddress || {}
-  const jobsiteAddressText = [addr.street, addr.suburb, addr.state, addr.postcode].filter(Boolean).join(', ') || '—'
+  const jobsiteAddressText = [addr.street, addr.suburb, addr.state, addr.postcode]
+    .filter(Boolean)
+    .join(', ') || '—'
 
   return (
     <div className="print-only max-w-3xl mx-auto p-6 space-y-8">
@@ -47,7 +51,7 @@ export default async function Page({
         )}
       </div>
 
-      {/* ... estimate options continue ... */}
+      {/* More sections here if needed */}
     </div>
   )
 }
