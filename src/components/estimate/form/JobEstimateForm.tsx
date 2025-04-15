@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   addDoc,
   collection,
-  doc,
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
