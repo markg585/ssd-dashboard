@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { useForm, FormProvider } from 'react-hook-form'
+import { useForm, FormProvider, useFieldArray, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -21,10 +21,12 @@ import MeasurementsSection from '@/components/estimate/form/MeasurementsSection'
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 
-// --- SCHEMA + TYPES ---
 const optionSchema = z.object({
+  key: z.string(),
+  label: z.string(),
   totalSqm: z.coerce.number(),
   equipment: z.array(z.object({
     item: z.string(),
@@ -56,21 +58,14 @@ const formSchema = z.object({
   phone: z.string(),
   email: z.string().email(),
   details: z.string().optional(),
-  options: z.record(optionSchema)
+  options: z.array(optionSchema)
 })
 
 export type FormData = z.infer<typeof formSchema>
 
-type ShapeEntry = {
-  shape: 'rectangle' | 'triangle' | 'trapezoid'
-  values: string[]
-}
-
 export default function JobEstimateForm() {
   const router = useRouter()
-  const [options, setOptions] = useState(['Option A'])
-  const [activeOption, setActiveOption] = useState('Option A')
-  const [visitedTabs, setVisitedTabs] = useState(['Option A'])
+  const [activeKey, setActiveKey] = useState('option-a')
   const [saving, setSaving] = useState(false)
   const submittingRef = useRef(false)
 
@@ -82,32 +77,45 @@ export default function JobEstimateForm() {
       phone: '',
       email: '',
       details: '',
-      options: {
-        'Option A': {
+      options: [
+        {
+          key: 'option-a',
+          label: 'Option A',
           totalSqm: 0,
           equipment: [],
           materials: [],
           shapeEntries: []
         }
-      }
+      ]
     }
   })
 
-  const { getValues, setValue } = form
+  const { getValues, setValue, register, control } = form
+  const { fields, append, remove } = useFieldArray({ name: 'options', control })
+  const optionValues = useWatch({ control, name: 'options' })
 
-  const addNewOption = (optionName: string) => {
-    setOptions(prev => [...prev, optionName])
-    setActiveOption(optionName)
-    setVisitedTabs(prev => [...prev, optionName])
-    setValue(`options.${optionName}`, {
+  const addNewOption = () => {
+    const charCode = 65 + fields.length
+    const key = `option-${String.fromCharCode(charCode).toLowerCase()}`
+    append({
+      key,
+      label: `Option ${String.fromCharCode(charCode)}`,
       totalSqm: 0,
       equipment: [],
       materials: [],
       shapeEntries: []
     })
+    setActiveKey(key)
   }
 
-  const calculateArea = (entry: ShapeEntry): number => {
+  const deleteOption = (index: number, key: string) => {
+    remove(index)
+    if (activeKey === key && fields.length > 1) {
+      setActiveKey(fields[0].key)
+    }
+  }
+
+  const calculateArea = (entry: { shape: string, values: string[] }): number => {
     const [a, b, c] = (entry.values ?? []).map((v) => parseFloat(v || '0'))
     switch (entry.shape) {
       case 'rectangle': return a * b
@@ -120,13 +128,7 @@ export default function JobEstimateForm() {
   const onSaveAll = async (data: FormData) => {
     if (submittingRef.current) return
 
-    const missingTabs = options.filter(opt => !visitedTabs.includes(opt))
-    if (missingTabs.length > 0) {
-      toast.error(`Please visit all options before saving.`)
-      return
-    }
-
-    const emptyShapes = Object.values(data.options).filter(opt => opt.shapeEntries.length === 0)
+    const emptyShapes = data.options.filter(opt => opt.shapeEntries.length === 0)
     if (emptyShapes.length > 0) {
       toast.error(`Each option must include at least one measurement.`)
       return
@@ -154,17 +156,13 @@ export default function JobEstimateForm() {
         updatedAt: serverTimestamp(),
       }, { merge: true })
 
-      const processedOptions = Object.fromEntries(
-        Object.entries(options).map(([key, option]) => {
-          return [key, {
-            ...option,
-            shapeEntries: option.shapeEntries.map((entry) => ({
-              ...entry,
-              area: parseFloat(calculateArea(entry).toFixed(2)),
-            })),
-          }]
-        })
-      )
+      const processedOptions = options.map(option => ({
+        ...option,
+        shapeEntries: option.shapeEntries.map((entry) => ({
+          ...entry,
+          area: parseFloat(calculateArea(entry).toFixed(2))
+        }))
+      }))
 
       await addDoc(collection(db, 'customers', customerId, 'jobsites'), {
         customerName,
@@ -197,18 +195,26 @@ export default function JobEstimateForm() {
           <CustomerDetails />
 
           <Tabs
-            value={activeOption}
-            onValueChange={(val) => {
-              setActiveOption(val)
-              setVisitedTabs(prev => prev.includes(val) ? prev : [...prev, val])
-            }}
+            value={activeKey}
+            onValueChange={(val) => setActiveKey(val)}
             className="space-y-4"
           >
             <TabsList className="flex flex-wrap gap-2 overflow-x-auto max-w-full">
-              {options.map(opt => (
-                <TabsTrigger key={opt} value={opt}>
-                  {opt}
-                </TabsTrigger>
+              {fields.map((field, index) => (
+                <div key={field.key} className="relative">
+                  <TabsTrigger value={field.key} className="pr-6 pl-3">
+                    <span>{optionValues?.[index]?.label || field.label}</span>
+                  </TabsTrigger>
+                  {fields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => deleteOption(index, field.key)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               ))}
             </TabsList>
 
@@ -217,20 +223,23 @@ export default function JobEstimateForm() {
                 variant="ghost"
                 type="button"
                 className="w-full sm:w-auto"
-                onClick={() => {
-                  const next = `Option ${String.fromCharCode(65 + options.length)}`
-                  addNewOption(next)
-                }}
+                onClick={addNewOption}
               >
                 + Add Option
               </Button>
             </div>
 
-            {options.map(opt => (
-              <TabsContent key={opt} value={opt} className="space-y-6">
-                <MeasurementsSection optionKey={opt} />
-                <EquipmentSection fieldPrefix={`options.${opt}.equipment`} />
-                <MaterialsSection optionKey={opt} />
+            {fields.map((field, index) => (
+              <TabsContent key={field.key} value={field.key} className="space-y-6">
+                <Input
+                  {...register(`options.${index}.label`)}
+                  autoComplete="off"
+                  placeholder="Label (e.g. Front Driveway)"
+                  className="max-w-sm"
+                />
+                <MeasurementsSection optionIndex={index} />
+                <EquipmentSection fieldPrefix={`options.${index}.equipment`} />
+                <MaterialsSection optionIndex={index} />
               </TabsContent>
             ))}
           </Tabs>

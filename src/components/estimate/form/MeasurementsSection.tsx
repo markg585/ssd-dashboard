@@ -28,12 +28,12 @@ type ShapeEntry = {
 }
 
 type Props = {
-  optionKey: string
+  optionIndex: number
 }
 
-export default function MeasurementsSection({ optionKey }: Props) {
+export default function MeasurementsSection({ optionIndex }: Props) {
   const { control, register, watch, setValue } = useFormContext()
-  const fieldPath = `options.${optionKey}.shapeEntries`
+  const fieldPath = `options.${optionIndex}.shapeEntries`
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -80,8 +80,8 @@ export default function MeasurementsSection({ optionKey }: Props) {
   }
 
   useEffect(() => {
-    setValue(`options.${optionKey}.totalSqm`, totalArea)
-  }, [totalArea, setValue, optionKey])
+    setValue(`options.${optionIndex}.totalSqm`, totalArea)
+  }, [totalArea, setValue, optionIndex])
 
   return (
     <Card>
@@ -102,7 +102,7 @@ export default function MeasurementsSection({ optionKey }: Props) {
 
         <div className="space-y-4">
           {typedFields.map((field, index) => {
-            const prefix = `${fieldPath}.${index}`
+            const prefix = `options.${optionIndex}.shapeEntries.${index}`
 
             return (
               <div key={field.id} className="grid md:grid-cols-8 gap-3 items-end">
@@ -220,7 +220,7 @@ export default function MeasurementsSection({ optionKey }: Props) {
           ))}
         </div>
 
-        <input type="hidden" {...register(`options.${optionKey}.totalSqm`)} />
+        <input type="hidden" {...register(`options.${optionIndex}.totalSqm`)} />
       </CardContent>
     </Card>
   )

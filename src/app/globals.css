@@ -120,3 +120,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ✅ PRINT-ONLY CLEANUP */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Only show printable content */
+  .print-only,
+  .print-only * {
+    visibility: visible !important;
+  }
+
+  .print-only {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white !important;
+    z-index: 9999;
+    padding: 0;
+    margin: 0;
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+}

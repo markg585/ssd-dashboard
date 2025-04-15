@@ -7,16 +7,14 @@ import { useFormContext, useFieldArray } from 'react-hook-form'
 import type { FormData } from './JobEstimateForm'
 
 type Props = {
-  optionKey: string
+  optionIndex: number
 }
 
-export default function MaterialsSection({ optionKey }: Props) {
+export default function MaterialsSection({ optionIndex }: Props) {
   const { control, register } = useFormContext<FormData>()
-  const fieldPrefix = `options.${optionKey}.materials` as const
-
   const { fields, append } = useFieldArray({
     control,
-    name: fieldPrefix satisfies `options.${string}.materials`,
+    name: `options.${optionIndex}.materials` as const,
   })
 
   return (
@@ -44,26 +42,26 @@ export default function MaterialsSection({ optionKey }: Props) {
           <div key={field.id} className="grid grid-cols-5 gap-2 items-end">
             <Input
               placeholder="Item"
-              {...register(`${fieldPrefix}.${index}.item`)}
+              {...register(`options.${optionIndex}.materials.${index}.item`)}
             />
             <Input
               placeholder="Type"
-              {...register(`${fieldPrefix}.${index}.type`)}
+              {...register(`options.${optionIndex}.materials.${index}.type`)}
             />
             <Input
               type="number"
               placeholder="SQM"
-              {...register(`${fieldPrefix}.${index}.sqm`, { valueAsNumber: true })}
+              {...register(`options.${optionIndex}.materials.${index}.sqm`, { valueAsNumber: true })}
             />
             <Input
               type="number"
               placeholder="Spray Rate"
-              {...register(`${fieldPrefix}.${index}.sprayRate`, { valueAsNumber: true })}
+              {...register(`options.${optionIndex}.materials.${index}.sprayRate`, { valueAsNumber: true })}
             />
             <Input
               type="number"
               placeholder="Price"
-              {...register(`${fieldPrefix}.${index}.price`, { valueAsNumber: true })}
+              {...register(`options.${optionIndex}.materials.${index}.price`, { valueAsNumber: true })}
             />
           </div>
         ))}
@@ -71,3 +69,4 @@ export default function MaterialsSection({ optionKey }: Props) {
     </Card>
   )
 }
+
