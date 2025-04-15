@@ -17,13 +17,16 @@ type MaterialItem = {
   sprayRate: number
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function Page(props: any) {
-  const estimateId = props.params?.estimateId
+export default async function Page({ params }: { params: { estimateId: string } }) {
+  const estimateId = params.estimateId
   const estimate = await getEstimateById(estimateId)
+
   if (!estimate) return notFound()
+  console.log('🖨️ Print Estimate:', estimate)
 
   const typedEstimate = estimate as NonNullable<typeof estimate>
+  const addr = typedEstimate.jobsiteAddress || {}
+  const jobsiteAddressText = [addr.street, addr.suburb, addr.state, addr.postcode].filter(Boolean).join(', ') || '—'
 
   return (
     <div className="print-only max-w-3xl mx-auto p-6 space-y-8">
@@ -52,17 +55,15 @@ export default async function Page(props: any) {
       {/* JOBSITE ADDRESS */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold mb-2">Jobsite Address</h3>
-        <p>
-          {typedEstimate.address.street}, {typedEstimate.address.suburb}, {typedEstimate.address.state} {typedEstimate.address.postcode}
-        </p>
+        <p>{jobsiteAddressText}</p>
         {typedEstimate.details && <p className="mt-2"><strong>Job Notes:</strong> {typedEstimate.details}</p>}
       </div>
 
       {/* ESTIMATE OPTIONS */}
-      {Array.isArray(typedEstimate.options) && typedEstimate.options.map((opt, index: number) => {
+      {Array.isArray(typedEstimate.options) && typedEstimate.options.map((opt, index) => {
         const areaByType: Record<string, number> = {}
 
-        opt.shapeEntries?.forEach((shape: { area?: number; areaTypes?: string[] }) => {
+        opt.shapeEntries?.forEach((shape) => {
           const area = shape.area || 0
           shape.areaTypes?.forEach((type: string) => {
             areaByType[type] = (areaByType[type] || 0) + area
@@ -79,7 +80,7 @@ export default async function Page(props: any) {
             <div className="text-sm space-y-1">
               <h5 className="font-medium">Area Type Breakdown</h5>
               <ul className="pl-4 list-disc">
-                {usedTypes.map(([type, total]: [string, number]) => (
+                {usedTypes.map(([type, total]) => (
                   <li key={type}>
                     <strong>{type}</strong>: {total.toFixed(2)} sqm
                   </li>
@@ -97,8 +98,8 @@ export default async function Page(props: any) {
               <div className="mt-2 space-y-4">
                 <h5 className="font-medium text-sm">Equipment & Labour</h5>
 
-                {['Prep', 'Bitumen', 'Asphalt'].map((category: string) => {
-                  const items = opt.equipment.filter((eq: EquipmentItem) => eq.category === category)
+                {['Prep', 'Bitumen', 'Asphalt'].map((category) => {
+                  const items = opt.equipment.filter((eq) => eq.category === category)
                   if (items.length === 0) return null
 
                   return (
@@ -112,19 +113,15 @@ export default async function Page(props: any) {
                           <div>Days</div>
                           <div>Total Hrs</div>
                         </div>
-                        {items.map((eq: EquipmentItem, idx: number) => {
+                        {items.map((eq, idx) => {
                           const totalHrs = Number(eq.units || 0) * Number(eq.hours || 0) * Number(eq.days || 0)
-
                           return (
-                            <div
-                              key={idx}
-                              className="grid grid-cols-5 px-3 py-2 border-t text-xs"
-                            >
+                            <div key={idx} className="grid grid-cols-5 px-3 py-2 border-t text-xs">
                               <div>{eq.item || '-'}</div>
                               <div>{eq.units || '-'}</div>
                               <div>{eq.hours || '-'}</div>
                               <div>{eq.days || '-'}</div>
-                              <div>{totalHrs || '-'}</div>
+                              <div>{totalHrs}</div>
                             </div>
                           )
                         })}
@@ -145,11 +142,8 @@ export default async function Page(props: any) {
                     <div>Type</div>
                     <div>Spray Rate</div>
                   </div>
-                  {opt.materials.map((mat: MaterialItem, idx: number) => (
-                    <div
-                      key={idx}
-                      className="grid grid-cols-3 px-3 py-2 border-t text-xs"
-                    >
+                  {opt.materials.map((mat, idx) => (
+                    <div key={idx} className="grid grid-cols-3 px-3 py-2 border-t text-xs">
                       <div>{mat.item || '-'}</div>
                       <div>{mat.type || '-'}</div>
                       <div>{mat.sprayRate || '-'}</div>
@@ -170,6 +164,4 @@ export default async function Page(props: any) {
     </div>
   )
 }
-
-
 

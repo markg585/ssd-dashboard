@@ -32,7 +32,7 @@ function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
     lastName: data.lastName ?? '',
     customerEmail: data.customerEmail ?? '',
     phone: data.phone ?? '',
-    address: {
+    jobsiteAddress: {
       street: data.jobsiteAddress?.street ?? '',
       suburb: data.jobsiteAddress?.suburb ?? '',
       postcode: data.jobsiteAddress?.postcode ?? '',
@@ -43,7 +43,7 @@ function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
     createdAtFormatted: createdAt
       ? createdAt.toLocaleDateString('en-AU')
       : '—',
-    options: data.options as Record<string, EstimateOption>,
+    options: data.options as EstimateOption[], // ✅ changed from Record<string, ...>
   }
 }
 
@@ -77,4 +77,5 @@ export async function getMaterialsList() {
     })
   }))
 }
+
 

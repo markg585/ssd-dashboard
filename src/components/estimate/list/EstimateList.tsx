@@ -43,19 +43,19 @@ export function EstimateList({ estimates }: Props) {
     }
   }
 
-  // 🔁 Customer dropdown list (first + last name)
   const customers = useMemo(() => {
     return Array.from(
       new Set(estimates.map((e) => `${e.firstName} ${e.lastName}`))
     ).sort()
   }, [estimates])
 
-  // 🔍 Filtered list based on search and filter
   const filtered = useMemo(() => {
     return data
       .filter((est) => {
         const fullName = `${est.firstName} ${est.lastName}`
-        const addressText = `${est.address.street} ${est.address.suburb} ${est.address.state} ${est.address.postcode}`
+        const addressText = est.jobsiteAddress
+          ? `${est.jobsiteAddress.street} ${est.jobsiteAddress.suburb} ${est.jobsiteAddress.state} ${est.jobsiteAddress.postcode}`
+          : ''
 
         const matchSearch =
           fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -116,7 +116,9 @@ export function EstimateList({ estimates }: Props) {
           <TableBody>
             {filtered.map((est, idx) => {
               const fullName = `${est.firstName} ${est.lastName}`
-              const address = `${est.address.street}, ${est.address.suburb} ${est.address.state} ${est.address.postcode}`
+              const address = est.jobsiteAddress
+                ? `${est.jobsiteAddress.street}, ${est.jobsiteAddress.suburb} ${est.jobsiteAddress.state} ${est.jobsiteAddress.postcode}`
+                : '—'
               return (
                 <TableRow
                   key={est.id}
@@ -124,7 +126,7 @@ export function EstimateList({ estimates }: Props) {
                 >
                   <TableCell>{est.createdAtFormatted}</TableCell>
                   <TableCell className="font-medium">{fullName}</TableCell>
-                  <TableCell>{address || '—'}</TableCell>
+                  <TableCell>{address}</TableCell>
                   <TableCell>{est.customerEmail || '—'}</TableCell>
                   <TableCell>{est.phone || '—'}</TableCell>
                   <TableCell className="text-right">
