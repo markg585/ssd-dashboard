@@ -3,24 +3,12 @@ import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 import type { EstimateOption } from '@/types/estimate'
 
-type PageProps = {
-  params: {
-    estimateId: string
-  }
-}
-
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params }: { params: { estimateId: string } }) {
   const estimate = await getEstimateById(params.estimateId)
   if (!estimate) return notFound()
 
-  const jobsiteAddressText = [
-    estimate.jobsiteAddress?.street,
-    estimate.jobsiteAddress?.suburb,
-    estimate.jobsiteAddress?.state,
-    estimate.jobsiteAddress?.postcode,
-  ]
-    .filter(Boolean)
-    .join(', ') || '—'
+  const addr = estimate.jobsiteAddress || {}
+  const jobsiteAddressText = [addr.street, addr.suburb, addr.state, addr.postcode].filter(Boolean).join(', ') || '—'
 
   return (
     <div className="print-only max-w-3xl mx-auto p-6 space-y-8">
@@ -72,7 +60,6 @@ export default async function Page({ params }: PageProps) {
             <div key={opt.key || index} className="border-t pt-4 space-y-4">
               <h4 className="font-semibold text-lg">{opt.label}</h4>
 
-              {/* Area Breakdown */}
               <div className="text-sm space-y-1">
                 <h5 className="font-medium">Area Type Breakdown</h5>
                 <ul className="pl-4 list-disc">
