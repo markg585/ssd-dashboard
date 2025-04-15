@@ -90,7 +90,7 @@ export default function JobEstimateForm() {
     }
   })
 
-  const { getValues, setValue, register, control } = form
+  const { getValues, register, control } = form
   const { fields, append, remove } = useFieldArray({ name: 'options', control })
   const optionValues = useWatch({ control, name: 'options' })
 
