@@ -2,9 +2,13 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-// --- Types ---
+type PageProps = {
+  params: {
+    estimateId: string
+  }
+}
 
-export default async function Page({ params }: { params: { estimateId: string } }) {
+export default async function Page({ params }: PageProps) {
   const estimateId = params.estimateId
   const estimate = await getEstimateById(estimateId)
 
@@ -43,13 +47,14 @@ export default async function Page({ params }: { params: { estimateId: string } 
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold mb-2">Jobsite Address</h3>
         <p>{jobsiteAddressText}</p>
-        {typedEstimate.details && <p className="mt-2"><strong>Job Notes:</strong> {typedEstimate.details}</p>}
+        {typedEstimate.details && (
+          <p className="mt-2"><strong>Job Notes:</strong> {typedEstimate.details}</p>
+        )}
       </div>
 
       {/* ESTIMATE OPTIONS */}
       {Array.isArray(typedEstimate.options) && typedEstimate.options.map((opt, index) => {
         const areaByType: Record<string, number> = {}
-
         opt.shapeEntries?.forEach((shape) => {
           const area = shape.area || 0
           shape.areaTypes?.forEach((type: string) => {
@@ -80,15 +85,13 @@ export default async function Page({ params }: { params: { estimateId: string } 
               <strong>Total Area:</strong> {opt.totalSqm?.toFixed(2)} sqm
             </p>
 
-            {/* Equipment Grouping */}
+            {/* Equipment */}
             {opt.equipment?.length > 0 && (
               <div className="mt-2 space-y-4">
                 <h5 className="font-medium text-sm">Equipment & Labour</h5>
-
                 {['Prep', 'Bitumen', 'Asphalt'].map((category) => {
-                  const items = opt.equipment.filter((eq) => eq.category === category)
+                  const items = opt.equipment.filter(eq => eq.category === category)
                   if (items.length === 0) return null
-
                   return (
                     <div key={category} className="space-y-1">
                       <p className="text-sm font-semibold">{category}</p>
@@ -151,4 +154,5 @@ export default async function Page({ params }: { params: { estimateId: string } 
     </div>
   )
 }
+
 
