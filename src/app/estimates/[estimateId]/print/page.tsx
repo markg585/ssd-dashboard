@@ -1,17 +1,24 @@
 import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
+import type { EstimateOption } from '@/types/estimate'
 
-interface PageProps {
-  params: { estimateId: string }
+type PageProps = {
+  params: {
+    estimateId: string
+  }
 }
 
 export default async function Page({ params }: PageProps) {
   const estimate = await getEstimateById(params.estimateId)
   if (!estimate) return notFound()
 
-  const addr = estimate.jobsiteAddress || {}
-  const jobsiteAddressText = [addr.street, addr.suburb, addr.state, addr.postcode]
+  const jobsiteAddressText = [
+    estimate.jobsiteAddress?.street,
+    estimate.jobsiteAddress?.suburb,
+    estimate.jobsiteAddress?.state,
+    estimate.jobsiteAddress?.postcode,
+  ]
     .filter(Boolean)
     .join(', ') || '—'
 
@@ -49,97 +56,99 @@ export default async function Page({ params }: PageProps) {
       </div>
 
       {/* ESTIMATE OPTIONS */}
-      {Array.isArray(estimate.options) && estimate.options.map((opt, index) => {
-        const areaByType: Record<string, number> = {}
-        opt.shapeEntries?.forEach((shape) => {
-          const area = shape.area || 0
-          shape.areaTypes?.forEach((type: string) => {
-            areaByType[type] = (areaByType[type] || 0) + area
+      {Array.isArray(estimate.options) &&
+        estimate.options.map((opt: EstimateOption, index: number) => {
+          const areaByType: Record<string, number> = {}
+          opt.shapeEntries?.forEach((shape) => {
+            const area = shape.area || 0
+            shape.areaTypes?.forEach((type) => {
+              areaByType[type] = (areaByType[type] || 0) + area
+            })
           })
-        })
-        const usedTypes = Object.entries(areaByType).filter(([, total]) => total > 0)
 
-        return (
-          <div key={opt.key || index} className="border-t pt-4 space-y-4">
-            <h4 className="font-semibold text-lg">{opt.label}</h4>
+          const usedTypes = Object.entries(areaByType).filter(([, total]) => total > 0)
 
-            {/* Area Type Breakdown */}
-            <div className="text-sm space-y-1">
-              <h5 className="font-medium">Area Type Breakdown</h5>
-              <ul className="pl-4 list-disc">
-                {usedTypes.map(([type, total]) => (
-                  <li key={type}>
-                    <strong>{type}</strong>: {total.toFixed(2)} sqm
-                  </li>
-                ))}
-              </ul>
-            </div>
+          return (
+            <div key={opt.key || index} className="border-t pt-4 space-y-4">
+              <h4 className="font-semibold text-lg">{opt.label}</h4>
 
-            {/* Total Area */}
-            <p className="text-sm">
-              <strong>Total Area:</strong> {opt.totalSqm?.toFixed(2)} sqm
-            </p>
-
-            {/* Equipment Grouping */}
-            {opt.equipment?.length > 0 && (
-              <div className="mt-2 space-y-4">
-                <h5 className="font-medium text-sm">Equipment & Labour</h5>
-                {['Prep', 'Bitumen', 'Asphalt'].map((category) => {
-                  const items = opt.equipment.filter(eq => eq.category === category)
-                  if (items.length === 0) return null
-                  return (
-                    <div key={category} className="space-y-1">
-                      <p className="text-sm font-semibold">{category}</p>
-                      <div className="border text-sm rounded-md overflow-hidden">
-                        <div className="grid grid-cols-5 bg-muted px-3 py-2 font-medium text-xs uppercase text-muted-foreground">
-                          <div>Item</div>
-                          <div>Units</div>
-                          <div>Hours</div>
-                          <div>Days</div>
-                          <div>Total Hrs</div>
-                        </div>
-                        {items.map((eq, idx) => {
-                          const totalHrs = eq.units * eq.hours * eq.days
-                          return (
-                            <div key={idx} className="grid grid-cols-5 px-3 py-2 border-t text-xs">
-                              <div>{eq.item || '-'}</div>
-                              <div>{eq.units || '-'}</div>
-                              <div>{eq.hours || '-'}</div>
-                              <div>{eq.days || '-'}</div>
-                              <div>{totalHrs}</div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Materials */}
-            {opt.materials?.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <h5 className="font-medium text-sm">Materials</h5>
-                <div className="border text-sm rounded-md overflow-hidden">
-                  <div className="grid grid-cols-3 bg-muted px-3 py-2 font-medium text-xs uppercase text-muted-foreground">
-                    <div>Item</div>
-                    <div>Type</div>
-                    <div>Spray Rate</div>
-                  </div>
-                  {opt.materials.map((mat, idx) => (
-                    <div key={idx} className="grid grid-cols-3 px-3 py-2 border-t text-xs">
-                      <div>{mat.item || '-'}</div>
-                      <div>{mat.type || '-'}</div>
-                      <div>{mat.sprayRate || '-'}</div>
-                    </div>
+              {/* Area Breakdown */}
+              <div className="text-sm space-y-1">
+                <h5 className="font-medium">Area Type Breakdown</h5>
+                <ul className="pl-4 list-disc">
+                  {usedTypes.map(([type, total]) => (
+                    <li key={type}>
+                      <strong>{type}</strong>: {total.toFixed(2)} sqm
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
-            )}
-          </div>
-        )
-      })}
+
+              <p className="text-sm">
+                <strong>Total Area:</strong> {opt.totalSqm?.toFixed(2)} sqm
+              </p>
+
+              {/* Equipment */}
+              {opt.equipment?.length > 0 && (
+                <div className="mt-2 space-y-4">
+                  <h5 className="font-medium text-sm">Equipment & Labour</h5>
+                  {['Prep', 'Bitumen', 'Asphalt'].map((category) => {
+                    const items = opt.equipment.filter(eq => eq.category === category)
+                    if (items.length === 0) return null
+
+                    return (
+                      <div key={category} className="space-y-1">
+                        <p className="text-sm font-semibold">{category}</p>
+                        <div className="border text-sm rounded-md overflow-hidden">
+                          <div className="grid grid-cols-5 bg-muted px-3 py-2 font-medium text-xs uppercase text-muted-foreground">
+                            <div>Item</div>
+                            <div>Units</div>
+                            <div>Hours</div>
+                            <div>Days</div>
+                            <div>Total Hrs</div>
+                          </div>
+                          {items.map((eq, idx) => {
+                            const totalHrs = eq.units * eq.hours * eq.days
+                            return (
+                              <div key={idx} className="grid grid-cols-5 px-3 py-2 border-t text-xs">
+                                <div>{eq.item}</div>
+                                <div>{eq.units}</div>
+                                <div>{eq.hours}</div>
+                                <div>{eq.days}</div>
+                                <div>{totalHrs}</div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Materials */}
+              {opt.materials?.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h5 className="font-medium text-sm">Materials</h5>
+                  <div className="border text-sm rounded-md overflow-hidden">
+                    <div className="grid grid-cols-3 bg-muted px-3 py-2 font-medium text-xs uppercase text-muted-foreground">
+                      <div>Item</div>
+                      <div>Type</div>
+                      <div>Spray Rate</div>
+                    </div>
+                    {opt.materials.map((mat, idx) => (
+                      <div key={idx} className="grid grid-cols-3 px-3 py-2 border-t text-xs">
+                        <div>{mat.item}</div>
+                        <div>{mat.type}</div>
+                        <div>{mat.sprayRate}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
 
       {/* FOOTER */}
       <div className="pt-6 mt-6 text-sm text-muted-foreground border-t">
@@ -149,6 +158,3 @@ export default async function Page({ params }: PageProps) {
     </div>
   )
 }
-
-
-
