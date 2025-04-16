@@ -8,7 +8,8 @@ import {
   FileText,
   Settings,
   Users,
-  LogOut
+  PhoneCall,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -18,7 +19,8 @@ import { toast } from 'sonner';
 const navItems = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Estimates', href: '/estimates', icon: FileText },
-  { name: 'Customers', href: '/customers', icon: Users }, // ✅ New nav item
+  { name: 'Leads', href: '/leads', icon: PhoneCall }, // ✅ NEW
+  { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Admin', href: '/admin', icon: Settings },
 ];
 
@@ -66,5 +68,6 @@ export function Sidebar() {
     </aside>
   );
 }
+
 
 
