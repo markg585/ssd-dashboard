@@ -2,7 +2,11 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-export default async function Page({ params }: { params: any }) {
+type PrintPageParams = {
+  params: { estimateId: string }
+}
+
+export default async function Page({ params }: PrintPageParams) {
   const estimate = await getEstimateById(params.estimateId)
   if (!estimate) return notFound()
 
@@ -13,7 +17,6 @@ export default async function Page({ params }: { params: any }) {
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8 bg-white text-black print:p-6 print:max-w-full print:bg-white print:text-black">
-
       {/* Toolbar and Title – visible only on screen */}
       <div className="print:hidden mb-4 space-y-2">
         <h1 className="text-2xl font-bold">Estimate Preview</h1>
@@ -52,11 +55,10 @@ export default async function Page({ params }: { params: any }) {
       {/* ESTIMATE OPTIONS */}
       {estimate.options?.map((opt, idx) => (
         <div key={idx} className="border p-6 rounded-md space-y-6 bg-white shadow-sm">
-
           <h3 className="font-semibold text-lg">Quote Option {idx + 1}: {opt.label}</h3>
           <p className="text-sm"><strong>Total Area:</strong> {opt.totalSqm} m²</p>
 
-          {/* SHAPE ENTRIES (Area Measurements) */}
+          {/* AREA MEASUREMENTS */}
           {opt.shapeEntries?.length > 0 && (
             <div>
               <h4 className="text-lg font-semibold mb-1">Area Measurements</h4>
@@ -77,7 +79,6 @@ export default async function Page({ params }: { params: any }) {
           {opt.equipment?.length > 0 && (
             <div className="space-y-4 mt-6">
               <h4 className="text-lg font-semibold">Equipment & Labour</h4>
-
               {['Prep', 'Bitumen', 'Asphalt'].map((category) => {
                 const items = opt.equipment.filter(e => e.category === category)
                 if (items.length === 0) return null
@@ -143,12 +144,12 @@ export default async function Page({ params }: { params: any }) {
               </table>
             </div>
           )}
-
         </div>
       ))}
     </div>
   )
 }
+
 
 
 
