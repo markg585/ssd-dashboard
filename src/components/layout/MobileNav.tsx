@@ -1,4 +1,3 @@
-// components/layout/MobileNav.tsx
 'use client'
 
 import Link from 'next/link'
@@ -15,6 +14,8 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { name: 'Dashboard', href: '/' },
   { name: 'Estimates', href: '/estimates' },
+  { name: 'Leads', href: '/leads' },
+  { name: 'Customers', href: '/customers' },
   { name: 'Admin', href: '/admin' },
 ]
 
