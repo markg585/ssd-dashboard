@@ -44,7 +44,7 @@ const formSchema = z.object({
     totalSqm: z.coerce.number(),
     equipment: z.array(z.object({
       item: z.string(),
-      category: z.enum(['Prep', 'Asphalt', 'Seal', 'General']),
+      category: z.enum(['Prep', 'Bitumen', 'Asphalt']),
       price: z.coerce.number().optional(),
       units: z.coerce.number(),
       hours: z.coerce.number(),

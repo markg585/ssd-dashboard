@@ -2,10 +2,8 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function Page({ params }: { params: any }) {
   const estimate = await getEstimateById(params.estimateId)
-
   if (!estimate) return notFound()
 
   const addr = estimate.jobsiteAddress || {}
@@ -14,8 +12,13 @@ export default async function Page({ params }: { params: any }) {
     .join(', ') || '—'
 
   return (
-    <div className="print-only max-w-3xl mx-auto p-6 space-y-8">
-      <PrintToolbar />
+    <div className="max-w-3xl mx-auto p-6 space-y-8 bg-white text-black print:p-6 print:max-w-full print:bg-white print:text-black">
+
+      {/* Toolbar and Title – visible only on screen */}
+      <div className="print:hidden mb-4 space-y-2">
+        <h1 className="text-2xl font-bold">Estimate Preview</h1>
+        <PrintToolbar />
+      </div>
 
       {/* HEADER */}
       <div className="flex justify-between items-start">
@@ -30,7 +33,7 @@ export default async function Page({ params }: { params: any }) {
       </div>
 
       {/* CUSTOMER INFO */}
-      <div className="border p-4 rounded-md">
+      <div className="border p-4 rounded-md bg-white shadow-sm">
         <h3 className="font-semibold mb-2">Customer</h3>
         <p><strong>Name:</strong> {estimate.firstName} {estimate.lastName}</p>
         <p><strong>Email:</strong> {estimate.customerEmail}</p>
@@ -38,7 +41,7 @@ export default async function Page({ params }: { params: any }) {
       </div>
 
       {/* JOBSITE ADDRESS */}
-      <div className="border p-4 rounded-md">
+      <div className="border p-4 rounded-md bg-white shadow-sm">
         <h3 className="font-semibold mb-2">Jobsite Address</h3>
         <p>{jobsiteAddressText}</p>
         {estimate.details && (
@@ -46,11 +49,106 @@ export default async function Page({ params }: { params: any }) {
         )}
       </div>
 
-      {/* You can continue rendering estimate.options below if needed */}
+      {/* ESTIMATE OPTIONS */}
+      {estimate.options?.map((opt, idx) => (
+        <div key={idx} className="border p-6 rounded-md space-y-6 bg-white shadow-sm">
+
+          <h3 className="font-semibold text-lg">Quote Option {idx + 1}: {opt.label}</h3>
+          <p className="text-sm"><strong>Total Area:</strong> {opt.totalSqm} m²</p>
+
+          {/* SHAPE ENTRIES (Area Measurements) */}
+          {opt.shapeEntries?.length > 0 && (
+            <div>
+              <h4 className="text-lg font-semibold mb-1">Area Measurements</h4>
+              <ul className="text-sm list-disc pl-5 space-y-1">
+                {opt.shapeEntries.map((s, i) => (
+                  <li key={i}>
+                    {s.label} – {s.area} m²
+                    {s.areaTypes?.length > 0 && (
+                      <> — Type{s.areaTypes.length > 1 ? 's' : ''}: {s.areaTypes.join(', ')}</>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* EQUIPMENT & LABOUR */}
+          {opt.equipment?.length > 0 && (
+            <div className="space-y-4 mt-6">
+              <h4 className="text-lg font-semibold">Equipment & Labour</h4>
+
+              {['Prep', 'Bitumen', 'Asphalt'].map((category) => {
+                const items = opt.equipment.filter(e => e.category === category)
+                if (items.length === 0) return null
+
+                return (
+                  <div key={category} className="space-y-2">
+                    <h5 className="text-base font-semibold">{category}</h5>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm border border-gray-300 table-fixed">
+                        <colgroup>
+                          <col className="w-[50%]" />
+                          <col className="w-[16.66%]" />
+                          <col className="w-[16.66%]" />
+                          <col className="w-[16.66%]" />
+                        </colgroup>
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="text-left px-3 py-2 border">Item</th>
+                            <th className="text-left px-3 py-2 border">Units</th>
+                            <th className="text-left px-3 py-2 border">Hours</th>
+                            <th className="text-left px-3 py-2 border">Days</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map((e, i) => (
+                            <tr key={i} className="even:bg-gray-50">
+                              <td className="px-3 py-2 border">{e.item}</td>
+                              <td className="px-3 py-2 border">{e.units}</td>
+                              <td className="px-3 py-2 border">{e.hours}</td>
+                              <td className="px-3 py-2 border">{e.days}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* MATERIALS */}
+          {opt.materials?.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold">Materials</h4>
+              <table className="w-full text-sm border border-gray-300 mt-2">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="text-left px-3 py-2 border">Item</th>
+                    <th className="text-left px-3 py-2 border">Type</th>
+                    <th className="text-left px-3 py-2 border">Spray Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {opt.materials.map((m, i) => (
+                    <tr key={i} className="even:bg-gray-50">
+                      <td className="px-3 py-2 border">{m.item}</td>
+                      <td className="px-3 py-2 border">{m.type}</td>
+                      <td className="px-3 py-2 border">{m.sprayRate} L/m²</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+        </div>
+      ))}
     </div>
   )
 }
-
 
 
 

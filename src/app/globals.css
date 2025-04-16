@@ -121,31 +121,19 @@
   }
 }
 
-/* ✅ PRINT-ONLY CLEANUP */
+/* ✅ FIXED PRINT STYLES */
 @media print {
-  /* Hide everything by default */
-  body * {
-    visibility: hidden !important;
-  }
-
-  /* Only show printable content */
-  .print-only,
-  .print-only * {
-    visibility: visible !important;
-  }
-
-  .print-only {
-    position: absolute !important;
-    top: 0;
-    left: 0;
-    width: 100%;
+  body {
     background: white !important;
-    z-index: 9999;
-    padding: 0;
-    margin: 0;
+    color: black !important;
+  }
+
+  .print\\:hidden {
+    display: none !important;
   }
 
   @page {
     margin: 1.5cm;
   }
 }
+
