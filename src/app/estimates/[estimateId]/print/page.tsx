@@ -2,7 +2,7 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-export default async function Page(props: { params: { estimateId: string } }) {
+export default async function Page(props: any) {
   const estimateId = props.params.estimateId
   const estimate = await getEstimateById(estimateId)
   if (!estimate) return notFound()
@@ -146,6 +146,7 @@ export default async function Page(props: { params: { estimateId: string } }) {
     </div>
   )
 }
+
 
 
 
