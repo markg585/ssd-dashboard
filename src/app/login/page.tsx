@@ -33,7 +33,7 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, data.email, data.password);
       toast.success('Logged in');
       router.push('/dashboard');
-    } catch (err) {
+    } catch {
       toast.error('Login failed. Check your credentials.');
     }
   };
@@ -69,5 +69,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
 

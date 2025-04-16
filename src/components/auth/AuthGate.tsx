@@ -1,4 +1,3 @@
-// components/AuthGate.tsx
 'use client';
 
 import { useAuth } from './AuthProvider';
@@ -18,7 +17,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     if (!loading && !user && !isPublic) {
       router.push('/login');
     }
-  }, [user, loading, isPublic]);
+  }, [loading, user, isPublic, router]); // ✅ include router
 
   if (loading || (!user && !isPublic)) {
     return <div className="p-4 text-center">Loading...</div>;
@@ -26,3 +25,4 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+
