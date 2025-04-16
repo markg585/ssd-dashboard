@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, FileText, Settings, LogOut } from 'lucide-react';
+import {
+  Home,
+  FileText,
+  Settings,
+  Users,
+  LogOut
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -12,6 +18,7 @@ import { toast } from 'sonner';
 const navItems = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Estimates', href: '/estimates', icon: FileText },
+  { name: 'Customers', href: '/customers', icon: Users }, // ✅ New nav item
   { name: 'Admin', href: '/admin', icon: Settings },
 ];
 
@@ -59,4 +66,5 @@ export function Sidebar() {
     </aside>
   );
 }
+
 
