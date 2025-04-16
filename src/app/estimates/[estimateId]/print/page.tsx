@@ -2,12 +2,9 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-export default async function Page({
-  params,
-}: {
-  params: { estimateId: string }
-}) {
-  const estimate = await getEstimateById(params.estimateId)
+export default async function Page(props: { params: { estimateId: string } }) {
+  const estimateId = props.params.estimateId
+  const estimate = await getEstimateById(estimateId)
   if (!estimate) return notFound()
 
   const addr = estimate.jobsiteAddress || {}
@@ -149,6 +146,7 @@ export default async function Page({
     </div>
   )
 }
+
 
 
 
