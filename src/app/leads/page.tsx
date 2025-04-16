@@ -10,7 +10,6 @@ import {
   deleteDoc,
   addDoc,
   where,
-  getDoc,
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -44,7 +43,7 @@ type Lead = {
     state: string;
   };
   status: 'inquired' | 'estimate completed' | 'quoted' | 'accepted' | 'declined';
-  createdAt?: any;
+  createdAt?: unknown;
 };
 
 export default function LeadsPage() {
@@ -73,8 +72,8 @@ export default function LeadsPage() {
 
   const handleConvert = async (lead: Lead) => {
     try {
-      // 1. Try to find an existing customer by email
       let customerId = '';
+
       if (lead.email) {
         const matchQuery = query(
           collection(db, 'customers'),
@@ -86,7 +85,6 @@ export default function LeadsPage() {
         }
       }
 
-      // 2. If not found, create a new customer
       if (!customerId) {
         const newCustomer = await addDoc(collection(db, 'customers'), {
           firstName: lead.firstName,
@@ -99,7 +97,6 @@ export default function LeadsPage() {
         customerId = newCustomer.id;
       }
 
-      // 3. Create estimate under that customer
       await addDoc(collection(db, `customers/${customerId}/jobsites`), {
         customerId,
         jobAddress: lead.address,
@@ -108,7 +105,6 @@ export default function LeadsPage() {
         createdAt: serverTimestamp(),
       });
 
-      // 4. Update lead status
       await setDoc(
         doc(db, 'leads', lead.id),
         { status: 'estimate completed' },
@@ -117,7 +113,7 @@ export default function LeadsPage() {
 
       toast.success('Converted to estimate');
       fetchLeads();
-    } catch (err) {
+    } catch {
       toast.error('Failed to convert lead');
     }
   };
@@ -206,5 +202,6 @@ export default function LeadsPage() {
     </div>
   );
 }
+
 
 

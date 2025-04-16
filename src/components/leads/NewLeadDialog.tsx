@@ -21,11 +21,9 @@ import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-// ✅ Define service options + type (for UI)
 type ServiceOption = 'Prep' | 'Bitumen' | 'Asphalt';
 const SERVICE_OPTIONS: ServiceOption[] = ['Prep', 'Bitumen', 'Asphalt'];
 
-// ✅ Zod schema (inline enum for TypeScript compatibility)
 const schema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
@@ -50,7 +48,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -100,7 +97,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
           <DialogTitle>New Lead</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Name */}
           <div className="flex gap-2">
             <div className="flex-1">
               <Label>First Name</Label>
@@ -112,7 +108,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
             </div>
           </div>
 
-          {/* Contact */}
           <div className="flex gap-2">
             <div className="flex-1">
               <Label>Phone</Label>
@@ -124,7 +119,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
             </div>
           </div>
 
-          {/* Address */}
           <div>
             <Label>Street</Label>
             <Input {...register('street')} />
@@ -144,7 +138,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
             </div>
           </div>
 
-          {/* Source */}
           <div>
             <Label>How did they inquire?</Label>
             <RadioGroup
@@ -161,7 +154,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
             </RadioGroup>
           </div>
 
-          {/* Services */}
           <div>
             <Label>What are they after?</Label>
             <div className="flex gap-4 pt-1">
@@ -178,7 +170,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
             </div>
           </div>
 
-          {/* Notes */}
           <div>
             <Label>Notes</Label>
             <Textarea {...register('notes')} />
@@ -190,5 +181,6 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
     </Dialog>
   );
 }
+
 
 
