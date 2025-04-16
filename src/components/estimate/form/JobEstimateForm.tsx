@@ -1,13 +1,25 @@
+// /components/estimate/form/JobEstimateForm.tsx
+
 'use client'
 
-import { useRef, useState } from 'react'
-import { useForm, FormProvider, useFieldArray, useWatch } from 'react-hook-form'
+import { useRef, useState, useEffect } from 'react'
+import {
+  useForm,
+  FormProvider,
+  useFieldArray,
+  useWatch,
+} from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   addDoc,
   collection,
   serverTimestamp,
+  getDocs,
+  query,
+  where,
+  doc,
+  updateDoc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
@@ -19,7 +31,12 @@ import MaterialsSection from '@/components/estimate/form/MaterialsSection'
 import MeasurementsSection from '@/components/estimate/form/MeasurementsSection'
 import JobsiteAddress from '@/components/estimate/form/JobsiteAddress'
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -38,6 +55,7 @@ const formSchema = z.object({
     postcode: z.string(),
     state: z.string(),
   }),
+  leadId: z.string().optional(),
   options: z.array(z.object({
     key: z.string(),
     label: z.string(),
@@ -67,7 +85,7 @@ const formSchema = z.object({
 
 export type FormData = z.infer<typeof formSchema>
 
-export default function JobEstimateForm() {
+export default function JobEstimateForm({ prefill }: { prefill?: Partial<FormData> }) {
   const router = useRouter()
   const [activeKey, setActiveKey] = useState('option-a')
   const [saving, setSaving] = useState(false)
@@ -101,9 +119,28 @@ export default function JobEstimateForm() {
     },
   })
 
-  const { getValues, register, control } = form
+  const { getValues, register, control, reset } = form
   const { fields, append, remove } = useFieldArray({ name: 'options', control })
   const optionValues = useWatch({ control, name: 'options' })
+
+  useEffect(() => {
+    if (prefill) {
+      reset({
+        ...getValues(),
+        firstName: prefill.firstName ?? '',
+        lastName: prefill.lastName ?? '',
+        phone: prefill.phone ?? '',
+        email: prefill.email ?? '',
+        jobsiteAddress: prefill.jobsiteAddress ?? {
+          street: '',
+          suburb: '',
+          postcode: '',
+          state: '',
+        },
+        leadId: prefill.leadId,
+      })
+    }
+  }, [prefill, reset, getValues])
 
   const addNewOption = () => {
     const charCode = 65 + fields.length
@@ -158,9 +195,17 @@ export default function JobEstimateForm() {
         details,
         jobsiteAddress,
         options,
+        leadId,
       } = data
 
       let finalCustomerId = customerId
+
+      if (!finalCustomerId && email) {
+        const existing = await getDocs(query(collection(db, 'customers'), where('email', '==', email)))
+        if (!existing.empty) {
+          finalCustomerId = existing.docs[0].id
+        }
+      }
 
       if (!finalCustomerId) {
         const customerRef = await addDoc(collection(db, 'customers'), {
@@ -191,7 +236,14 @@ export default function JobEstimateForm() {
         jobsiteAddress,
         options: processedOptions,
         createdAt: serverTimestamp(),
+        leadId: leadId ?? null,
       })
+
+      if (leadId) {
+        await updateDoc(doc(db, 'leads', leadId), {
+          status: 'estimate completed',
+        })
+      }
 
       toast.success('Estimate saved!')
       router.push('/estimates')
@@ -296,5 +348,7 @@ export default function JobEstimateForm() {
     </div>
   )
 }
+
+
 
 

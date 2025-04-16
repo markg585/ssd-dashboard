@@ -92,58 +92,62 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
       <DialogTrigger asChild>
         <Button variant="outline">+ New Lead</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>New Lead</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="flex gap-2">
-            <div className="flex-1">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Name */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label>First Name</Label>
               <Input {...register('firstName')} />
             </div>
-            <div className="flex-1">
+            <div>
               <Label>Last Name</Label>
               <Input {...register('lastName')} />
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <div className="flex-1">
+          {/* Contact */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label>Phone</Label>
               <Input {...register('phone')} />
             </div>
-            <div className="flex-1">
+            <div>
               <Label>Email</Label>
               <Input {...register('email')} />
             </div>
           </div>
 
+          {/* Address */}
           <div>
             <Label>Street</Label>
             <Input {...register('street')} />
           </div>
-          <div className="flex gap-2">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
               <Label>Suburb</Label>
               <Input {...register('suburb')} />
             </div>
-            <div className="flex-1">
+            <div>
               <Label>Postcode</Label>
               <Input {...register('postcode')} />
             </div>
-            <div className="flex-1">
+            <div>
               <Label>State</Label>
               <Input {...register('state')} />
             </div>
           </div>
 
+          {/* Source */}
           <div>
             <Label>How did they inquire?</Label>
             <RadioGroup
               defaultValue="email"
               onValueChange={(val) => setValue('source', val as FormData['source'])}
-              className="flex gap-4 pt-1"
+              className="flex flex-wrap gap-4 pt-1"
             >
               {['email', 'phone', 'referral'].map((method) => (
                 <div key={method} className="flex items-center gap-2">
@@ -154,9 +158,10 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
             </RadioGroup>
           </div>
 
+          {/* Services */}
           <div>
             <Label>What are they after?</Label>
-            <div className="flex gap-4 pt-1">
+            <div className="flex flex-wrap gap-4 pt-1">
               {SERVICE_OPTIONS.map((service) => (
                 <div key={service} className="flex items-center gap-2">
                   <Checkbox
@@ -170,6 +175,7 @@ export default function NewLeadDialog({ onCreated }: { onCreated?: () => void })
             </div>
           </div>
 
+          {/* Notes */}
           <div>
             <Label>Notes</Label>
             <Textarea {...register('notes')} />
