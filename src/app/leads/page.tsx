@@ -43,6 +43,8 @@ const STATUS_OPTIONS = [
   'declined',
 ] as const
 
+type LeadStatus = (typeof STATUS_OPTIONS)[number]
+
 type Lead = {
   id: string
   firstName: string
@@ -57,15 +59,15 @@ type Lead = {
     postcode: string
     state: string
   }
-  status: 'inquired' | 'estimate started' | 'quoted' | 'accepted' | 'declined'
-  createdAt?: any
+  status: Exclude<LeadStatus, 'all'>
+  createdAt?: { toDate: () => Date }
 }
 
 export default function LeadsPage() {
   const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>([])
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | Lead['status']>('all')
+  const [statusFilter, setStatusFilter] = useState<LeadStatus>('all')
 
   const fetchLeads = async () => {
     const ref = query(collection(db, 'leads'), orderBy('createdAt', 'desc'))
@@ -130,7 +132,7 @@ export default function LeadsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-sm"
           />
-          <Select value={statusFilter} onValueChange={val => setStatusFilter(val as any)}>
+          <Select value={statusFilter} onValueChange={val => setStatusFilter(val as LeadStatus)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
@@ -233,6 +235,7 @@ export default function LeadsPage() {
     </div>
   )
 }
+
 
 
 
