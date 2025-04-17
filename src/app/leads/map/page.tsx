@@ -58,7 +58,7 @@ export default function LeadMap() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [routeMode, setRouteMode] = useState(false)
   const [routeStops, setRouteStops] = useState<Lead[]>([])
-  const [directionsResult, setDirectionsResult] = useState<any>(null)
+  const [directionsResult, setDirectionsResult] = useState<google.maps.DirectionsResult | null>(null)
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   const { isLoaded } = useLoadScript({
@@ -130,11 +130,14 @@ export default function LeadMap() {
     })
   }, [routeMode])
 
-  const directionsCallback = useCallback((res: any) => {
-    if (res?.status === 'OK') {
-      setDirectionsResult(res)
-    }
-  }, [])
+  const directionsCallback = useCallback(
+    (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+      if (status === 'OK' && result) {
+        setDirectionsResult(result)
+      }
+    },
+    []
+  )
 
   const openInGoogleMaps = () => {
     if (!routeStops.length || !myLocation) return
@@ -151,7 +154,7 @@ export default function LeadMap() {
   const fitRouteBounds = () => {
     if (!mapRef.current || !directionsResult) return
     const bounds = new google.maps.LatLngBounds()
-    directionsResult.routes[0].legs.forEach((leg: any) => {
+    directionsResult.routes[0].legs.forEach((leg: google.maps.DirectionsLeg) => {
       bounds.extend(leg.start_location)
       bounds.extend(leg.end_location)
     })
@@ -217,7 +220,6 @@ export default function LeadMap() {
           onLoad={(map) => {
             mapRef.current = map
           }}
-          
         >
           {myLocation && (
             <Marker
@@ -283,13 +285,33 @@ export default function LeadMap() {
           )}
 
           {directionsResult && (
-            <DirectionsRenderer directions={directionsResult} options={{ preserveViewport: true }} />
+            <DirectionsRenderer
+              directions={directionsResult}
+              options={{ preserveViewport: true }}
+            />
           )}
         </GoogleMap>
       </div>
+
+      {routeMode && directionsResult && (
+        <div className="text-sm text-muted-foreground">
+          Route Total:{' '}
+          {directionsResult.routes[0].legs.reduce(
+            (acc: number, leg: google.maps.DirectionsLeg) => acc + (leg.distance?.value ?? 0),
+            0
+          ) / 1000}{' '}
+          km,{' '}
+          {directionsResult.routes[0].legs.reduce(
+            (acc: number, leg: google.maps.DirectionsLeg) => acc + (leg.duration?.value ?? 0),
+            0
+          ) / 60}{' '}
+          mins
+        </div>
+      )}
     </div>
   )
 }
+
 
 
 
