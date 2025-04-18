@@ -121,7 +121,6 @@
   }
 }
 
-/* ✅ FIXED PRINT STYLES */
 @media print {
   body {
     background: white !important;
@@ -136,4 +135,3 @@
     margin: 1.5cm;
   }
 }
-
