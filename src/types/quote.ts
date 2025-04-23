@@ -11,6 +11,11 @@ export type QuoteItem = {
   category?: 'Prep' | 'Bitumen' | 'Asphalt' // Only for equipment
   sqm?: number // ✅ Manual sqm input for material calculations
   sprayRate?: number // Editable sprayRate/depth (for material)
+
+  // 👇 Added for breakdown control
+  units?: number
+  hours?: number
+  days?: number
 }
 
 export type Quote = {
