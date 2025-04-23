@@ -1,24 +1,11 @@
-import { db } from './firebase'
+import { db } from '../firebase'
 import {
   collectionGroup,
   getDocs,
-  deleteDoc,
-  doc,
-  collection,
-  DocumentData,
   QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore'
 import type { Estimate, EstimateOption } from '@/types/estimate'
-
-// 🔧 Format address into display string if needed
-export function formatAddress(addr: {
-  street?: string
-  suburb?: string
-  state?: string
-  postcode?: string
-}) {
-  return [addr.street, addr.suburb, addr.state, addr.postcode].filter(Boolean).join(', ')
-}
 
 // 🔁 Transform Firestore doc into Estimate shape
 function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
@@ -39,48 +26,20 @@ function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
       state: data.jobsiteAddress?.state ?? '',
     },
     details: data.details ?? '',
+    additionalItems: data.additionalItems ?? [],
+    jobNotes: data.jobNotes ?? '',
     createdAt: createdAt?.toISOString() ?? '',
     createdAtFormatted: createdAt
       ? createdAt.toLocaleDateString('en-AU')
       : '—',
     options: data.options as EstimateOption[],
-
-    // ✅ New fields added here
-    jobNotes: data.jobNotes ?? '',
-    additionalItems: data.additionalItems ?? [],
+    customerId: data.customerId ?? '',
+    leadId: data.leadId ?? '',
   }
 }
 
-// ✅ Get all estimates
-export async function getAllEstimates(): Promise<Estimate[]> {
-  const snapshot = await getDocs(collectionGroup(db, 'jobsites'))
-  return snapshot.docs.map(transformEstimate)
-}
-
-// ✅ Get one estimate by ID
 export async function getEstimateById(id: string): Promise<Estimate | null> {
   const snapshot = await getDocs(collectionGroup(db, 'jobsites'))
   const docMatch = snapshot.docs.find((d) => d.id === id)
   return docMatch ? transformEstimate(docMatch) : null
 }
-
-// ✅ Delete estimate by ref path
-export async function deleteEstimateById(refPath: string): Promise<void> {
-  const docRef = doc(db, refPath)
-  await deleteDoc(docRef)
-}
-
-// ✅ Get material options from Firestore
-export async function getMaterialsList() {
-  const snapshot = await getDocs(collection(db, 'materials'))
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...(doc.data() as {
-      item: string
-      type: string
-    })
-  }))
-}
-
-
-

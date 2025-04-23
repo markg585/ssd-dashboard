@@ -1,5 +1,3 @@
-// /components/estimate/form/JobEstimateForm.tsx
-
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
@@ -30,6 +28,8 @@ import EquipmentSection from '@/components/estimate/form/EquipmentSection'
 import MaterialsSection from '@/components/estimate/form/MaterialsSection'
 import MeasurementsSection from '@/components/estimate/form/MeasurementsSection'
 import JobsiteAddress from '@/components/estimate/form/JobsiteAddress'
+import { EstimateAdditionalItems } from '@/components/estimate/form/EstimateAdditionalItems'
+import EstimateJobNotes from '@/components/estimate/form/EstimateJobNotes'
 
 import {
   Tabs,
@@ -56,6 +56,7 @@ const formSchema = z.object({
     state: z.string(),
   }),
   leadId: z.string().optional(),
+  jobNotes: z.string().optional(),
   options: z.array(z.object({
     key: z.string(),
     label: z.string(),
@@ -80,7 +81,14 @@ const formSchema = z.object({
       values: z.array(z.string()),
       areaTypes: z.array(z.string()),
     }))
-  }))
+  })),
+  additionalItems: z.array(
+    z.object({
+      description: z.string().optional(),
+      quantity: z.union([z.string(), z.number()]).optional(),
+      unitPrice: z.union([z.string(), z.number()]).optional(),
+    })
+  ).optional(),
 })
 
 export type FormData = z.infer<typeof formSchema>
@@ -116,6 +124,8 @@ export default function JobEstimateForm({ prefill }: { prefill?: Partial<FormDat
           shapeEntries: [],
         },
       ],
+      additionalItems: [],
+      jobNotes: '',
     },
   })
 
@@ -196,6 +206,8 @@ export default function JobEstimateForm({ prefill }: { prefill?: Partial<FormDat
         jobsiteAddress,
         options,
         leadId,
+        additionalItems,
+        jobNotes,
       } = data
 
       let finalCustomerId = customerId
@@ -235,6 +247,8 @@ export default function JobEstimateForm({ prefill }: { prefill?: Partial<FormDat
         details,
         jobsiteAddress,
         options: processedOptions,
+        additionalItems: additionalItems ?? [],
+        jobNotes: jobNotes ?? '',
         createdAt: serverTimestamp(),
         leadId: leadId ?? null,
       })
@@ -335,6 +349,18 @@ export default function JobEstimateForm({ prefill }: { prefill?: Partial<FormDat
             </CardContent>
           </Card>
 
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <EstimateAdditionalItems />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <EstimateJobNotes />
+            </CardContent>
+          </Card>
+
           <Button
             type="button"
             disabled={saving}
@@ -348,6 +374,8 @@ export default function JobEstimateForm({ prefill }: { prefill?: Partial<FormDat
     </div>
   )
 }
+
+
 
 
 

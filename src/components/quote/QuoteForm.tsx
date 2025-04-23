@@ -1,0 +1,292 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useForm, Controller, FormProvider } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { db } from '@/lib/firebase'
+import { collection, getDocs } from 'firebase/firestore'
+import { toast } from 'sonner'
+import OptionGroup from './OptionGroup'
+import QuoteSummary from './QuoteSummary'
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { QuotePdf } from '@/lib/pdf/generateQuotePdf'
+import type { Estimate } from '@/types/estimate'
+import type { QuoteItem } from '@/types/quote'
+
+const quoteSchema = z.object({
+  markupPercentage: z.coerce.number().min(0).max(100),
+  items: z.array(
+    z.object({
+      optionLabel: z.string(),
+      label: z.string(),
+      type: z.enum(['equipment', 'material', 'other']),
+      category: z.enum(['Prep', 'Bitumen', 'Asphalt']).optional(),
+      description: z.string(),
+      quantity: z.number(),
+      unitPrice: z.number(),
+      unitCost: z.number().optional(),
+      total: z.number(),
+      sqm: z.number().optional(),
+      sprayRate: z.number().optional(),
+    })
+  ),
+})
+
+export type QuoteFormData = z.infer<typeof quoteSchema>
+
+export default function QuoteForm({ initialEstimate }: { initialEstimate: Estimate }) {
+  const form = useForm<QuoteFormData>({
+    resolver: zodResolver(quoteSchema),
+    defaultValues: {
+      markupPercentage: 20,
+      items: [],
+    },
+  })
+
+  const { control, reset, watch, handleSubmit } = form
+  const items = watch('items')
+  const markupPercentage = watch('markupPercentage')
+
+  const [includedOptions, setIncludedOptions] = useState<Record<string, boolean>>({})
+  const [materialMap, setMaterialMap] = useState<Map<string, any>>(new Map())
+  const [ready, setReady] = useState(false)
+
+  const buildItemsFromEstimate = async (estimate: Estimate): Promise<QuoteItem[]> => {
+    const [materialsSnap, equipmentSnap] = await Promise.all([
+      getDocs(collection(db, 'materials')),
+      getDocs(collection(db, 'equipmentItems')),
+    ])
+
+    const materialMapLocal = new Map<string, any>()
+    const equipmentMap = new Map<string, any>()
+
+    materialsSnap.forEach((doc) => {
+      const d = doc.data()
+      const key = d.item?.trim().toLowerCase()
+      if (key) materialMapLocal.set(key, d)
+    })
+    setMaterialMap(materialMapLocal)
+
+    equipmentSnap.forEach((doc) => {
+      const d = doc.data()
+      const key = d.name?.trim().toLowerCase()
+      if (key) equipmentMap.set(key, d)
+    })
+
+    const quoteItems: QuoteItem[] = []
+
+    for (const opt of estimate.options) {
+      for (const m of opt.materials) {
+        const key = m.item?.toLowerCase().trim()
+        const mat = materialMapLocal.get(key)
+        if (!mat) continue
+
+        const sprayRate = parseFloat(m.sprayRate?.toString() || '1')
+        const unitPrice = Number(mat.unitPrice || 0)
+
+        quoteItems.push({
+          optionLabel: opt.label,
+          label: m.item,
+          type: 'material',
+          description: `${m.type} | ${mat.measurement || ''}`,
+          quantity: 0,
+          unitPrice,
+          unitCost: unitPrice,
+          total: 0,
+          sqm: 0,
+          sprayRate,
+        })
+      }
+
+      for (const e of opt.equipment) {
+        const key = e.item?.toLowerCase().trim()
+        const eq = equipmentMap.get(key)
+        const unitPrice = Number(eq?.unitPrice ?? eq?.price ?? 0)
+        const quantity = (e.units || 0) * (e.hours || 0) * (e.days || 0)
+
+        quoteItems.push({
+          optionLabel: opt.label,
+          label: e.item,
+          type: 'equipment',
+          category: e.category,
+          description: `${e.units} units × ${e.hours} hrs × ${e.days} days`,
+          quantity,
+          unitPrice,
+          unitCost: unitPrice,
+          total: parseFloat((quantity * unitPrice).toFixed(2)),
+        })
+      }
+
+      for (const add of estimate.additionalItems || []) {
+        const quantity = Number(add.quantity || 0)
+        const unitPrice = Number(add.unitPrice || 0)
+
+        quoteItems.push({
+          optionLabel: opt.label,
+          label: add.description || 'Other',
+          type: 'other',
+          description: 'Additional',
+          quantity,
+          unitPrice,
+          unitCost: 0,
+          total: quantity * unitPrice,
+        })
+      }
+    }
+
+    return quoteItems
+  }
+
+  useEffect(() => {
+    if (!initialEstimate) return
+
+    buildItemsFromEstimate(initialEstimate).then((items) => {
+      reset({
+        markupPercentage: 20,
+        items,
+      })
+
+      const optionLabels = Array.from(new Set(items.map(i => i.optionLabel).filter(Boolean))) as string[]
+      const initialIncluded: Record<string, boolean> = optionLabels.reduce((acc, label) => {
+        acc[label] = true
+        return acc
+      }, {} as Record<string, boolean>)
+
+      setIncludedOptions(initialIncluded)
+      setReady(true)
+    })
+  }, [initialEstimate, reset])
+
+  const onSubmit = (data: QuoteFormData) => {
+    console.log('🧾 Final Quote Data:', data)
+    toast.success('Quote saved (logged to console)')
+  }
+
+  const groupedByOption = items.reduce((acc, item) => {
+    const key = item.optionLabel
+    acc[key] = acc[key] || []
+    acc[key].push(item)
+    return acc
+  }, {} as Record<string, QuoteItem[]>)
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        <div className="rounded-xl border bg-white p-6 shadow-sm">
+          <h1 className="text-2xl font-semibold mb-4">New Quote from Estimate</h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-muted-foreground">
+            <div className="space-y-1">
+              <div>
+                <span className="font-medium text-foreground">Customer:</span>{' '}
+                {initialEstimate?.firstName} {initialEstimate?.lastName}
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Phone:</span>{' '}
+                {initialEstimate?.phone || 'N/A'}
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Email:</span>{' '}
+                {initialEstimate?.customerEmail || 'N/A'}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div>
+                <span className="font-medium text-foreground">Jobsite:</span>{' '}
+                {initialEstimate?.jobsiteAddress?.street},{' '}
+                {initialEstimate?.jobsiteAddress?.suburb},{' '}
+                {initialEstimate?.jobsiteAddress?.state}{' '}
+                {initialEstimate?.jobsiteAddress?.postcode}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <label className="text-sm font-medium text-foreground">Markup %</label>
+                <Controller
+                  name="markupPercentage"
+                  control={control}
+                  render={({ field }) => (
+                    <Input type="number" min={0} max={100} {...field} className="w-[100px]" />
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {Object.entries(groupedByOption).map(([optionLabel, optionItems], i) => {
+          const equipment = optionItems.filter(i => i.type === 'equipment')
+          const materials = optionItems.filter(i => i.type === 'material')
+          const additionalItems = optionItems.filter(i => i.type === 'other')
+
+          const estimateOption = initialEstimate.options.find(opt => opt.label === optionLabel)
+          const shapes = (estimateOption?.shapeEntries || []).map((shape: any) => ({
+            name: shape.label,
+            area: Number(shape.area),
+            types: shape.areaTypes,
+          }))
+
+          return (
+            <OptionGroup
+              key={optionLabel}
+              index={i}
+              option={{
+                label: optionLabel,
+                shapes,
+                equipment,
+                materials,
+                additionalItems,
+                notes: (estimateOption as any)?.notes ?? '',
+              }}
+              allItems={items}
+              initialEstimate={initialEstimate}
+              materialMap={materialMap}
+            />
+          )
+        })}
+
+        {ready && (
+          <QuoteSummary
+            items={items}
+            markupPercentage={markupPercentage}
+            includedOptions={includedOptions}
+            setIncludedOptions={setIncludedOptions}
+          />
+        )}
+
+        <div className="flex justify-between items-center gap-4">
+          <Button type="submit">Save Quote</Button>
+
+          <PDFDownloadLink
+            document={
+              <QuotePdf
+                jobName="SCSD Estimate"
+                customerName={`${initialEstimate.firstName} ${initialEstimate.lastName}`}
+                jobsiteAddress={`${initialEstimate.jobsiteAddress.street}, ${initialEstimate.jobsiteAddress.suburb}, ${initialEstimate.jobsiteAddress.state} ${initialEstimate.jobsiteAddress.postcode}`}
+                selectedOptions={Object.entries(includedOptions)
+                  .filter(([_, val]) => val)
+                  .map(([label]) => label)}
+                items={items}
+                markupPercentage={markupPercentage}
+              />
+            }
+            fileName={`SCSD_Quote_${initialEstimate.lastName}.pdf`}
+          >
+            {({ loading }) => (
+              <Button variant="outline" type="button">
+                {loading ? 'Preparing PDF...' : 'Download Quote PDF'}
+              </Button>
+            )}
+          </PDFDownloadLink>
+        </div>
+      </form>
+    </FormProvider>
+  )
+}
+
+
+
+
+
+
+

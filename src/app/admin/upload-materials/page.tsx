@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { db } from '@/lib/firebase'
-import { collection, addDoc } from 'firebase/firestore'
+import { collection, doc, setDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
 
 export default function UploadMaterialsPage() {
@@ -15,15 +15,35 @@ export default function UploadMaterialsPage() {
       const items = JSON.parse(jsonInput)
 
       for (const item of items) {
-        await addDoc(collection(db, 'materials'), {
-          item: item.item,
-          type: item.type, // Prep, Bitumen, Asphalt
-          sprayRateDefault: item.sprayRateDefault || 0,
-          createdAt: new Date(),
-        })
+        if (
+          !item.item ||
+          !item.type ||
+          item.unitPrice === undefined ||
+          item.formula === undefined ||
+          !item.measurement
+        ) {
+          console.warn('❗ Skipping invalid entry:', item)
+          continue
+        }
+
+        // Use a clean slugified ID based on item name
+        const slugId = item.item.toLowerCase().replace(/[^a-z0-9]/gi, '-')
+
+        await setDoc(
+          doc(db, 'materials', slugId),
+          {
+            item: item.item,
+            type: item.type,
+            unitPrice: Number(item.unitPrice),
+            formula: Number(item.formula), // e.g. 0.906
+            measurement: item.measurement,
+            updatedAt: new Date(),
+          },
+          { merge: true }
+        )
       }
 
-      toast.success('✅ Uploaded materials')
+      toast.success('✅ Materials uploaded and updated')
       setJsonInput('')
     } catch (err) {
       console.error(err)
@@ -36,11 +56,13 @@ export default function UploadMaterialsPage() {
       <h1 className="text-2xl font-semibold">Upload Materials</h1>
       <Textarea
         rows={12}
-        placeholder={`Paste JSON like:\n[\n  {\n    "item": "Bitumen Emulsion",\n    "type": "Bitumen",\n    "sprayRateDefault": 0.8\n  }\n]`}
+        placeholder={`Paste JSON like:\n[\n  {\n    "item": "AC10",\n    "type": "Asphalt",\n    "unitPrice": 195,\n    "formula": 2.4,\n    "measurement": "Tonne"\n  }\n]`}
         value={jsonInput}
         onChange={(e) => setJsonInput(e.target.value)}
       />
-      <Button onClick={handleUpload}>Upload to Firestore</Button>
+      <Button onClick={handleUpload}>Upload / Overwrite</Button>
     </div>
   )
 }
+
+

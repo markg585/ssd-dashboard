@@ -2,7 +2,6 @@ import { getEstimateById } from '@/lib/firestore'
 import { notFound } from 'next/navigation'
 import PrintToolbar from '@/components/estimate/list/PrintToolbar'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function Page(props: any) {
   const estimateId = props.params.estimateId
   const estimate = await getEstimateById(estimateId)
@@ -144,9 +143,45 @@ export default async function Page(props: any) {
           )}
         </div>
       ))}
+
+      {/* ADDITIONAL ITEMS */}
+      {Array.isArray(estimate.additionalItems) && estimate.additionalItems.length > 0 && (
+        <div className="border p-6 rounded-md space-y-4 bg-white shadow-sm">
+          <h3 className="text-lg font-semibold">Additional Items</h3>
+          <table className="w-full text-sm border border-gray-300">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="text-left px-3 py-2 border">Description</th>
+                <th className="text-left px-3 py-2 border">Qty</th>
+                <th className="text-left px-3 py-2 border">Unit Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(estimate.additionalItems ?? []).map((item, i) => (
+                <tr key={i} className="even:bg-gray-50">
+                  <td className="px-3 py-2 border">{item.description || '—'}</td>
+                  <td className="px-3 py-2 border">{item.quantity ?? '—'}</td>
+                  <td className="px-3 py-2 border">
+                    {item.unitPrice !== undefined ? `$${item.unitPrice}` : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* JOB NOTES */}
+      {estimate.jobNotes && (
+        <div className="border p-6 rounded-md bg-white shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">Job Notes</h3>
+          <p className="text-sm whitespace-pre-line">{estimate.jobNotes}</p>
+        </div>
+      )}
     </div>
   )
 }
+
 
 
 

@@ -17,6 +17,18 @@ export const formSchema = z.object({
     state: z.string(),
   }),
   details: z.string().optional(),
+  jobNotes: z.string().optional(),
+
+  additionalItems: z
+    .array(
+      z.object({
+        description: z.string().optional(),
+        quantity: z.union([z.string(), z.number()]).optional(),
+        unitPrice: z.union([z.string(), z.number()]).optional(),
+      })
+    )
+    .optional(),
+
   options: z.array(
     z.object({
       key: z.string(),
@@ -65,15 +77,24 @@ export type Estimate = {
   lastName: string
   customerEmail: string
   phone?: string
+  customerId?: string // ✅ used in quote generation
+  leadId?: string
   jobsiteAddress: {
     street: string
     suburb: string
     postcode: string
     state: string
   }
+  details?: string
+  jobNotes?: string
+  additionalItems?: {
+    description?: string
+    quantity?: number | string
+    unitPrice?: number | string
+  }[]
+  options: EstimateOption[]
   createdAt: string
   createdAtFormatted: string
-  options: EstimateOption[] // ✅ updated from Record<string, ...>
-  details?: string
 }
+
 

@@ -34,7 +34,6 @@ export type EquipmentCategory = 'Prep' | 'Bitumen' | 'Asphalt'
 
 type EquipmentItem = {
   name: string
-  price: number
   category: EquipmentCategory
 }
 
@@ -75,13 +74,12 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
           if (
             data &&
             typeof data.name === 'string' &&
-            typeof data.price === 'number'
+            typeof data.category === 'string'
           ) {
             items.push({
               name: data.name,
-              price: data.price,
-              category: typeof data.category === 'string' ? data.category : 'Prep',
-            } as EquipmentItem)
+              category: data.category as EquipmentCategory,
+            })
           }
         })
 
@@ -126,7 +124,6 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
           <div></div>
         </div>
 
-        {/* Equipment Rows */}
         {fields.map((field, index) => {
           const row = equipmentValues?.[index] || {}
           const totalHrs =
@@ -160,9 +157,10 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
                             <CommandItem
                               key={item.name}
                               value={item.name}
-                              onSelect={() =>
+                              onSelect={() => {
                                 setValue(`${fieldPrefix}.${index}.item`, item.name)
-                              }
+                                setValue(`${fieldPrefix}.${index}.category`, item.category)
+                              }}
                             >
                               {item.name}
                             </CommandItem>
@@ -192,7 +190,7 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
                 </Select>
               </div>
 
-              {/* Units / Hours / Days */}
+              {/* Inputs */}
               <Input
                 type="number"
                 placeholder="Units"
@@ -212,7 +210,7 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
                 {...register(`${fieldPrefix}.${index}.days`, { valueAsNumber: true })}
               />
 
-              {/* Total */}
+              {/* Total Hours */}
               <div className="text-sm text-center">
                 {totalHrs ? totalHrs.toFixed(1) : '-'}
               </div>
@@ -233,3 +231,4 @@ export default function EquipmentSection({ fieldPrefix }: Props) {
     </Card>
   )
 }
+
