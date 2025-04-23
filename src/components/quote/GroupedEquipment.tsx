@@ -19,7 +19,9 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
     <div className="space-y-6">
       {Object.entries(grouped).map(([category, items]) => (
         <div key={category}>
-          <h4 className="font-semibold text-muted-foreground mb-2">{category}</h4>
+          <h4 className="font-semibold text-muted-foreground mb-2">
+            {category}
+          </h4>
 
           <div className="overflow-x-auto rounded-md border">
             <table className="w-full text-sm table-fixed">
@@ -44,16 +46,15 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                   )
 
                   const baseName = `items.${itemIndex}`
+                  const total = (item.unit ?? 0) * (item.hours ?? 0) * (item.days ?? 0) * (item.unitPrice ?? 0)
 
                   return (
                     <tr key={i} className="border-t">
                       <td className="p-2">{item.label}</td>
                       <td className="p-2 text-muted-foreground">{item.description}</td>
-
-                      {/* Units */}
                       <td className="p-2 text-right">
                         <Controller
-                          name={`${baseName}.units`}
+                          name={`${baseName}.unit`}
                           control={control}
                           render={({ field }) => (
                             <Input
@@ -62,13 +63,10 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                               min={0}
                               className="w-full text-right"
                               onChange={(e) => field.onChange(Number(e.target.value))}
-                              value={field.value ?? 0}
                             />
                           )}
                         />
                       </td>
-
-                      {/* Hours */}
                       <td className="p-2 text-right">
                         <Controller
                           name={`${baseName}.hours`}
@@ -80,13 +78,10 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                               min={0}
                               className="w-full text-right"
                               onChange={(e) => field.onChange(Number(e.target.value))}
-                              value={field.value ?? 0}
                             />
                           )}
                         />
                       </td>
-
-                      {/* Days */}
                       <td className="p-2 text-right">
                         <Controller
                           name={`${baseName}.days`}
@@ -98,13 +93,10 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                               min={0}
                               className="w-full text-right"
                               onChange={(e) => field.onChange(Number(e.target.value))}
-                              value={field.value ?? 0}
                             />
                           )}
                         />
                       </td>
-
-                      {/* Unit Price */}
                       <td className="p-2 text-right">
                         <Controller
                           name={`${baseName}.unitPrice`}
@@ -113,24 +105,16 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                             <Input
                               {...field}
                               type="number"
-                              step="0.01"
                               min={0}
+                              step="0.01"
                               className="w-full text-right"
                               onChange={(e) => field.onChange(Number(e.target.value))}
-                              value={field.value ?? 0}
                             />
                           )}
                         />
                       </td>
-
-                      {/* Total */}
                       <td className="p-2 text-right font-medium">
-                        {formatCurrency(
-                          (item.units ?? 0) *
-                          (item.hours ?? 0) *
-                          (item.days ?? 0) *
-                          item.unitPrice
-                        )}
+                        {formatCurrency(total)}
                       </td>
                     </tr>
                   )
