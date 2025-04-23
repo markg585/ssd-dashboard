@@ -14,7 +14,6 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
   const { control, watch } = useFormContext()
 
   const grouped = groupByCategory(equipmentItems)
-  const watchedItems: QuoteItem[] = watch('items') || []
 
   return (
     <div className="space-y-6">
@@ -43,9 +42,8 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                   )
 
                   const baseName = `items.${itemIndex}`
-                  const liveItem = watchedItems[itemIndex] ?? {}
-                  const quantity = liveItem.quantity ?? 1
-                  const unitPrice = liveItem.unitPrice ?? 0
+                  const quantity = watch(`${baseName}.quantity`)
+                  const unitPrice = watch(`${baseName}.unitPrice`)
 
                   return (
                     <tr key={i} className="border-t">
@@ -83,7 +81,7 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                         />
                       </td>
                       <td className="p-2 text-right font-medium">
-                        {formatCurrency(quantity * unitPrice)}
+                        {formatCurrency((quantity ?? 0) * (unitPrice ?? 0))}
                       </td>
                     </tr>
                   )
