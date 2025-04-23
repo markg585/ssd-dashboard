@@ -42,6 +42,9 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                   )
 
                   const baseName = `items.${itemIndex}`
+                  const fallbackQty = (item.units ?? 1) * (item.hours ?? 1) * (item.days ?? 1)
+                  const quantity = item.quantity ?? fallbackQty
+                  const unitPrice = item.unitPrice ?? 0
 
                   return (
                     <tr key={i} className="border-t">
@@ -57,6 +60,7 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                               type="number"
                               min={0}
                               className="w-full text-right"
+                              value={field.value ?? quantity}
                               onChange={(e) => field.onChange(Number(e.target.value))}
                             />
                           )}
@@ -79,7 +83,7 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                         />
                       </td>
                       <td className="p-2 text-right font-medium">
-                        {formatCurrency(item.quantity * item.unitPrice)}
+                        {formatCurrency(quantity * unitPrice)}
                       </td>
                     </tr>
                   )
