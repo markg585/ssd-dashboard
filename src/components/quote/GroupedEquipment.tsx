@@ -11,9 +11,10 @@ type Props = {
 }
 
 export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
-  const { control } = useFormContext()
+  const { control, watch } = useFormContext()
 
   const grouped = groupByCategory(equipmentItems)
+  const watchedItems: QuoteItem[] = watch('items') || []
 
   return (
     <div className="space-y-6">
@@ -42,9 +43,9 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                   )
 
                   const baseName = `items.${itemIndex}`
-                  const fallbackQty = (item.units ?? 1) * (item.hours ?? 1) * (item.days ?? 1)
-                  const quantity = item.quantity ?? fallbackQty
-                  const unitPrice = item.unitPrice ?? 0
+                  const liveItem = watchedItems[itemIndex] ?? {}
+                  const quantity = liveItem.quantity ?? 1
+                  const unitPrice = liveItem.unitPrice ?? 0
 
                   return (
                     <tr key={i} className="border-t">
@@ -60,7 +61,6 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                               type="number"
                               min={0}
                               className="w-full text-right"
-                              value={field.value ?? quantity}
                               onChange={(e) => field.onChange(Number(e.target.value))}
                             />
                           )}
