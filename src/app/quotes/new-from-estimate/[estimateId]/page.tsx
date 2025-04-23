@@ -3,11 +3,7 @@
 import { getEstimateById } from '@/lib/firestore/estimates'
 import QuoteForm from '@/components/quote/QuoteForm'
 
-export default async function Page({
-  params,
-}: {
-  params: { estimateId: string }
-}) {
+export default async function Page({ params }: any) {
   const estimate = await getEstimateById(params.estimateId)
 
   if (!estimate) {
@@ -21,4 +17,5 @@ export default async function Page({
     </div>
   )
 }
+
 
