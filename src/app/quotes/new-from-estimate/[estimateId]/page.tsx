@@ -3,13 +3,11 @@
 import { getEstimateById } from '@/lib/firestore/estimates'
 import QuoteForm from '@/components/quote/QuoteForm'
 
-type PageProps = {
-  params: {
-    estimateId: string
-  }
-}
-
-export default async function Page({ params }: PageProps) {
+export default async function Page({
+  params,
+}: {
+  params: { estimateId: string }
+}) {
   const estimate = await getEstimateById(params.estimateId)
 
   if (!estimate) {
