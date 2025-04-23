@@ -7,6 +7,16 @@ import {
 } from 'firebase/firestore'
 import type { Estimate, EstimateOption } from '@/types/estimate'
 
+// Define equipment item type so TS knows what we're dealing with
+type EstimateEquipmentItem = {
+  item: string
+  category: 'Prep' | 'Bitumen' | 'Asphalt'
+  units: number
+  hours: number
+  days: number
+  price?: number
+}
+
 // 🔁 Transform Firestore doc into Estimate shape
 function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
   const data = doc.data()
@@ -32,7 +42,16 @@ function transformEstimate(doc: QueryDocumentSnapshot<DocumentData>): Estimate {
     createdAtFormatted: createdAt
       ? createdAt.toLocaleDateString('en-AU')
       : '—',
-    options: data.options as EstimateOption[],
+    options: (data.options ?? []).map((option: EstimateOption) => {
+      return {
+        ...option,
+        equipment: (option.equipment ?? []).map((item: EstimateEquipmentItem) => ({
+          ...item,
+        })),
+        materials: option.materials ?? [],
+        shapeEntries: option.shapeEntries ?? [],
+      }
+    }),
     customerId: data.customerId ?? '',
     leadId: data.leadId ?? '',
   }
