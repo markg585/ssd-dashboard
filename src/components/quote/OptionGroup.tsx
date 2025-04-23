@@ -53,7 +53,7 @@ export default function OptionGroup({
         {equipment.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-lg font-semibold text-muted-foreground">Equipment</h3>
-            <GroupedEquipment equipmentItems={equipment} allItems={allItems} />
+            <GroupedEquipment equipmentItems={equipment} />
           </div>
         )}
 
@@ -89,8 +89,3 @@ export default function OptionGroup({
     </Card>
   )
 }
-
-
-
-
-

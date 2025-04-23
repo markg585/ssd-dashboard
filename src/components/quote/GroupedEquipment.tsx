@@ -7,28 +7,24 @@ import { Input } from '@/components/ui/input'
 
 type Props = {
   equipmentItems: QuoteItem[]
-  allItems: QuoteItem[]
 }
 
-export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
-  const { control } = useFormContext()
-
+export default function GroupedEquipment({ equipmentItems }: Props) {
+  const { control, watch } = useFormContext()
   const grouped = groupByCategory(equipmentItems)
 
   return (
     <div className="space-y-6">
       {Object.entries(grouped).map(([category, items]) => (
         <div key={category}>
-          <h4 className="font-semibold text-muted-foreground mb-2">
-            {category}
-          </h4>
+          <h4 className="font-semibold text-muted-foreground mb-2">{category}</h4>
 
           <div className="overflow-x-auto rounded-md border">
             <table className="w-full text-sm table-fixed">
               <thead className="bg-muted">
                 <tr>
                   <th className="text-left p-2 w-[200px]">Item</th>
-                  <th className="text-left p-2">Estimate Entry</th>
+                  <th className="text-left p-2">Description</th>
                   <th className="text-right p-2 w-[80px]">Units</th>
                   <th className="text-right p-2 w-[80px]">Hours</th>
                   <th className="text-right p-2 w-[80px]">Days</th>
@@ -37,82 +33,40 @@ export default function GroupedEquipment({ equipmentItems, allItems }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, i) => {
-                  const itemIndex = allItems.findIndex(
-                    (i) =>
-                      i.label === item.label &&
-                      i.optionLabel === item.optionLabel &&
-                      i.type === item.type
-                  )
+                {items.map((item) => {
+                  const fieldName = `items.${item.id}`
+                  const values = watch(fieldName)
 
-                  const baseName = `items.${itemIndex}`
-                  const total = (item.unit ?? 0) * (item.hours ?? 0) * (item.days ?? 0) * (item.unitPrice ?? 0)
+                  const unit = Number(values?.unit ?? 0)
+                  const hours = Number(values?.hours ?? 0)
+                  const days = Number(values?.days ?? 0)
+                  const unitPrice = Number(values?.unitPrice ?? 0)
+                  const total = unit * hours * days * unitPrice
 
                   return (
-                    <tr key={i} className="border-t">
+                    <tr key={item.id} className="border-t">
                       <td className="p-2">{item.label}</td>
                       <td className="p-2 text-muted-foreground">{item.description}</td>
-                      <td className="p-2 text-right">
-                        <Controller
-                          name={`${baseName}.unit`}
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              type="number"
-                              min={0}
-                              className="w-full text-right"
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          )}
-                        />
-                      </td>
-                      <td className="p-2 text-right">
-                        <Controller
-                          name={`${baseName}.hours`}
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              type="number"
-                              min={0}
-                              className="w-full text-right"
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          )}
-                        />
-                      </td>
-                      <td className="p-2 text-right">
-                        <Controller
-                          name={`${baseName}.days`}
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              type="number"
-                              min={0}
-                              className="w-full text-right"
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          )}
-                        />
-                      </td>
-                      <td className="p-2 text-right">
-                        <Controller
-                          name={`${baseName}.unitPrice`}
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              className="w-full text-right"
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          )}
-                        />
-                      </td>
+
+                      {['unit', 'hours', 'days', 'unitPrice'].map((field) => (
+                        <td key={field} className="p-2 text-right">
+                          <Controller
+                            name={`${fieldName}.${field}`}
+                            control={control}
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                type="number"
+                                min={0}
+                                className="w-full text-right"
+                                value={field.value ?? ''}
+                                onChange={(e) => field.onChange(Number(e.target.value))}
+                              />
+                            )}
+                          />
+                        </td>
+                      ))}
+
                       <td className="p-2 text-right font-medium">
                         {formatCurrency(total)}
                       </td>
@@ -136,4 +90,3 @@ function groupByCategory(items: QuoteItem[]) {
     return acc
   }, {})
 }
-

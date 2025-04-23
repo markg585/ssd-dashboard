@@ -41,7 +41,9 @@ export async function createQuoteFromEstimate(estimate: Estimate): Promise<Quote
       const unitCost = Number(mat.unitPrice || 0)
 
       items.push({
-        label: `${m.item} – ${option.label}`,
+        id: nanoid(),
+        optionLabel: option.label,
+        label: m.item,
         type: 'material',
         description: `${m.type} | ${formula} L/m² × ${sqm} m²`,
         quantity,
@@ -59,9 +61,15 @@ export async function createQuoteFromEstimate(estimate: Estimate): Promise<Quote
       const quantity = (e.units || 0) * (e.hours || 0) * (e.days || 0)
 
       items.push({
-        label: `${e.item} – ${option.label}`,
+        id: nanoid(),
+        optionLabel: option.label,
+        label: e.item,
         type: 'equipment',
+        category: e.category,
         description: `${e.category} | ${e.units} units × ${e.hours} hrs × ${e.days} days`,
+        unit: Number(e.units),
+        hours: Number(e.hours),
+        days: Number(e.days),
         quantity,
         unitPrice,
         unitCost: unitPrice,
@@ -76,6 +84,8 @@ export async function createQuoteFromEstimate(estimate: Estimate): Promise<Quote
     const unitPrice = Number(extra.unitPrice || 0)
 
     items.push({
+      id: nanoid(),
+      optionLabel: '',
       label: extra.description || 'Other',
       type: 'other',
       description: 'Additional',
@@ -115,13 +125,3 @@ export async function saveQuoteToFirestore(quote: Quote) {
     updatedAt: new Date().toISOString(),
   })
 }
-
-
-
-
-
-
-
-
-
-

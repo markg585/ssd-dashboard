@@ -36,12 +36,14 @@ export default function AdditionalItems({ items, allItems }: Props) {
                   i.optionLabel === item.optionLabel &&
                   i.type === item.type
               )
-              const base = `items.${itemIndex}`
+              const base = `items.${item.id}`
 
               return (
                 <tr key={i} className="border-t">
                   <td className="p-2">{item.label}</td>
                   <td className="p-2 text-muted-foreground">{item.description}</td>
+
+                  {/* Quantity */}
                   <td className="p-2 text-right">
                     <Controller
                       name={`${base}.quantity`}
@@ -57,6 +59,8 @@ export default function AdditionalItems({ items, allItems }: Props) {
                       )}
                     />
                   </td>
+
+                  {/* Unit Price */}
                   <td className="p-2 text-right">
                     <Controller
                       name={`${base}.unitPrice`}
@@ -73,8 +77,24 @@ export default function AdditionalItems({ items, allItems }: Props) {
                       )}
                     />
                   </td>
+
+                  {/* Total (live preview) */}
                   <td className="p-2 text-right font-medium">
-                    {formatCurrency(item.quantity * item.unitPrice)}
+                    <Controller
+                      name={`${base}.quantity`}
+                      control={control}
+                      render={({ field: quantityField }) => (
+                        <Controller
+                          name={`${base}.unitPrice`}
+                          control={control}
+                          render={({ field: priceField }) => {
+                            const qty = Number(quantityField.value || 0)
+                            const price = Number(priceField.value || 0)
+                            return <span>{formatCurrency(qty * price)}</span>
+                          }}
+                        />
+                      )}
+                    />
                   </td>
                 </tr>
               )
@@ -85,5 +105,6 @@ export default function AdditionalItems({ items, allItems }: Props) {
     </div>
   )
 }
+
 
 

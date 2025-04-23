@@ -6,31 +6,31 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { db } from '@/lib/firebase'
 import { collection, getDocs } from 'firebase/firestore'
 import { toast } from 'sonner'
 import OptionGroup from './OptionGroup'
 import QuoteSummary from './QuoteSummary'
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { QuotePdf } from '@/lib/pdf/generateQuotePdf'
+import { db } from '@/lib/firebase'
+import { saveQuoteToFirestore } from '@/lib/firestore/saveQuote'
+import { calculateTotals } from '@/utils/calculateTotals'
 import type { Estimate } from '@/types/estimate'
 import type { QuoteItem } from '@/types/quote'
+import { nanoid } from 'nanoid'
 
 const quoteSchema = z.object({
   markupPercentage: z.coerce.number().min(0).max(100),
-  items: z.array(
+  items: z.record(
     z.object({
-      optionLabel: z.string(),
-      label: z.string(),
-      type: z.enum(['equipment', 'material', 'other']),
-      category: z.enum(['Prep', 'Bitumen', 'Asphalt']).optional(),
-      description: z.string(),
-      quantity: z.number(),
+      unit: z.number().optional(),
+      hours: z.number().optional(),
+      days: z.number().optional(),
       unitPrice: z.number(),
-      unitCost: z.number().optional(),
-      total: z.number(),
+      quantity: z.number().optional(),
       sqm: z.number().optional(),
       sprayRate: z.number().optional(),
+      total: z.number().optional(),
     })
   ),
 })
@@ -42,17 +42,18 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
     resolver: zodResolver(quoteSchema),
     defaultValues: {
       markupPercentage: 20,
-      items: [],
+      items: {},
     },
   })
 
   const { control, reset, watch, handleSubmit } = form
-  const items = watch('items')
+  const itemsMap = watch('items')
   const markupPercentage = watch('markupPercentage')
 
   const [includedOptions, setIncludedOptions] = useState<Record<string, boolean>>({})
   const [materialMap, setMaterialMap] = useState<Map<string, any>>(new Map())
   const [ready, setReady] = useState(false)
+  const [items, setItems] = useState<QuoteItem[]>([])
 
   const buildItemsFromEstimate = async (estimate: Estimate): Promise<QuoteItem[]> => {
     const [materialsSnap, equipmentSnap] = await Promise.all([
@@ -88,6 +89,7 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
         const unitPrice = Number(mat.unitPrice || 0)
 
         quoteItems.push({
+          id: nanoid(),
           optionLabel: opt.label,
           label: m.item,
           type: 'material',
@@ -105,18 +107,23 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
         const key = e.item?.toLowerCase().trim()
         const eq = equipmentMap.get(key)
         const unitPrice = Number(eq?.unitPrice ?? eq?.price ?? 0)
+
         const quantity = (e.units || 0) * (e.hours || 0) * (e.days || 0)
 
         quoteItems.push({
+          id: nanoid(),
           optionLabel: opt.label,
           label: e.item,
           type: 'equipment',
           category: e.category,
           description: `${e.units} units × ${e.hours} hrs × ${e.days} days`,
-          quantity,
+          unit: Number(e.units),
+          hours: e.hours,
+          days: e.days,
           unitPrice,
           unitCost: unitPrice,
-          total: parseFloat((quantity * unitPrice).toFixed(2)),
+          quantity,
+          total: quantity * unitPrice,
         })
       }
 
@@ -125,6 +132,7 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
         const unitPrice = Number(add.unitPrice || 0)
 
         quoteItems.push({
+          id: nanoid(),
           optionLabel: opt.label,
           label: add.description || 'Other',
           type: 'other',
@@ -143,29 +151,83 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
   useEffect(() => {
     if (!initialEstimate) return
 
-    buildItemsFromEstimate(initialEstimate).then((items) => {
+    buildItemsFromEstimate(initialEstimate).then((rawItems) => {
+      const withIds = rawItems.map((item) => ({
+        ...item,
+        id: item.id ?? nanoid(),
+      }))
+
+      const formItems = Object.fromEntries(
+        withIds.map((item) => [
+          item.id,
+          {
+            unit: Number(item.unit ?? 0),
+            hours: Number(item.hours ?? 0),
+            days: Number(item.days ?? 0),
+            unitPrice: Number(item.unitPrice ?? 0),
+            quantity: Number(item.quantity ?? 0),
+            sqm: Number(item.sqm ?? 0),
+            sprayRate: Number(item.sprayRate ?? 1),
+          },
+        ])
+      )
+
       reset({
         markupPercentage: 20,
-        items,
+        items: formItems,
       })
 
-      const optionLabels = Array.from(new Set(items.map(i => i.optionLabel).filter(Boolean))) as string[]
+      const optionLabels = Array.from(
+        new Set(withIds.map((i) => i.optionLabel).filter(Boolean))
+      ) as string[]
+
       const initialIncluded: Record<string, boolean> = optionLabels.reduce((acc, label) => {
         acc[label] = true
         return acc
       }, {} as Record<string, boolean>)
 
       setIncludedOptions(initialIncluded)
+      setItems(withIds)
       setReady(true)
     })
   }, [initialEstimate, reset])
 
-  const onSubmit = (data: QuoteFormData) => {
-    console.log('🧾 Final Quote Data:', data)
-    toast.success('Quote saved (logged to console)')
+  const onSubmit = async (formData: QuoteFormData) => {
+    const itemsMap = formData.items
+    const markupPercentage = formData.markupPercentage
+
+    const totals = calculateTotals({
+      items,
+      itemsMap,
+      includedOptions,
+      markupPercentage,
+    })
+
+    const quoteData = {
+      customerName: `${initialEstimate.firstName} ${initialEstimate.lastName}`,
+      customerEmail: initialEstimate.customerEmail,
+      phone: initialEstimate.phone,
+      jobsite: initialEstimate.jobsiteAddress,
+      includedOptions: Object.entries(includedOptions)
+        .filter(([label, v]) => label && v)
+        .map(([label]) => label),
+      markupPercentage,
+      items,
+      totals,
+    }
+
+    try {
+      const quoteId = await saveQuoteToFirestore(quoteData)
+      toast.success('Quote saved successfully!')
+      console.log('✅ Quote saved with ID:', quoteId)
+    } catch (err) {
+      console.error('❌ Save failed', err)
+      toast.error('Failed to save quote.')
+    }
   }
 
   const groupedByOption = items.reduce((acc, item) => {
+    if (!item.optionLabel) return acc
     const key = item.optionLabel
     acc[key] = acc[key] || []
     acc[key].push(item)
@@ -195,20 +257,8 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
             <div className="space-y-1">
               <div>
                 <span className="font-medium text-foreground">Jobsite:</span>{' '}
-                {initialEstimate?.jobsiteAddress?.street},{' '}
-                {initialEstimate?.jobsiteAddress?.suburb},{' '}
-                {initialEstimate?.jobsiteAddress?.state}{' '}
-                {initialEstimate?.jobsiteAddress?.postcode}
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <label className="text-sm font-medium text-foreground">Markup %</label>
-                <Controller
-                  name="markupPercentage"
-                  control={control}
-                  render={({ field }) => (
-                    <Input type="number" min={0} max={100} {...field} className="w-[100px]" />
-                  )}
-                />
+                {initialEstimate?.jobsiteAddress?.street}, {initialEstimate?.jobsiteAddress?.suburb},{' '}
+                {initialEstimate?.jobsiteAddress?.state} {initialEstimate?.jobsiteAddress?.postcode}
               </div>
             </div>
           </div>
@@ -248,7 +298,6 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
         {ready && (
           <QuoteSummary
             items={items}
-            markupPercentage={markupPercentage}
             includedOptions={includedOptions}
             setIncludedOptions={setIncludedOptions}
           />
@@ -283,9 +332,6 @@ export default function QuoteForm({ initialEstimate }: { initialEstimate: Estima
     </FormProvider>
   )
 }
-
-
-
 
 
 

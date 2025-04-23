@@ -37,17 +37,11 @@ export default function MaterialList({ materials, allItems, initialEstimate, mat
           </thead>
           <tbody>
             {materials.map((item, i) => {
-              const itemIndex = allItems.findIndex(
-                (itm) =>
-                  itm.label === item.label &&
-                  itm.optionLabel === item.optionLabel &&
-                  itm.type === 'material'
-              )
-              const base = `items.${itemIndex}`
+              const base = `items.${item.id}`
 
               const option = initialEstimate.options.find(o => o.label === item.optionLabel)
               const estimateMaterial = option?.materials?.find(m => m.item === item.label)
-              const defaultSprayRate = Number(estimateMaterial?.sprayRate || 0)
+              const defaultSprayRate = Number(estimateMaterial?.sprayRate || 1)
 
               const firestoreMaterial = materialMap.get(item.label.toLowerCase())
               const formula = Number(firestoreMaterial?.formula || 1)
@@ -55,14 +49,17 @@ export default function MaterialList({ materials, allItems, initialEstimate, mat
 
               const sqm = watch(`${base}.sqm`) || 0
               const sprayRate = watch(`${base}.sprayRate`) ?? defaultSprayRate
-              const unitPrice = watch(`${base}.unitPrice`) || 0
+              const unitPrice = watch(`${base}.unitPrice`) ?? Number(item.unitPrice || 0)
 
               const quantity = calculateMaterialQuantity({ sqm, sprayRate, formula, type })
 
+              // Ensure RHF knows the live values
               useEffect(() => {
-                setValue(`${base}.quantity`, quantity)
-                setValue(`${base}.total`, quantity * unitPrice)
-              }, [quantity, unitPrice, base, setValue])
+                if (!isNaN(quantity)) {
+                  setValue(`${base}.quantity`, Number(quantity))
+                  setValue(`${base}.total`, Number(quantity * unitPrice))
+                }
+              }, [quantity, unitPrice, setValue, base])
 
               return (
                 <tr key={i} className="border-t">
@@ -74,7 +71,7 @@ export default function MaterialList({ materials, allItems, initialEstimate, mat
                     <Controller
                       name={`${base}.sqm`}
                       control={control}
-                      defaultValue={0}
+                      defaultValue={sqm}
                       render={({ field }) => (
                         <Input
                           {...field}
@@ -91,7 +88,7 @@ export default function MaterialList({ materials, allItems, initialEstimate, mat
                     <Controller
                       name={`${base}.sprayRate`}
                       control={control}
-                      defaultValue={defaultSprayRate}
+                      defaultValue={sprayRate}
                       render={({ field }) => (
                         <Input
                           {...field}
@@ -104,27 +101,30 @@ export default function MaterialList({ materials, allItems, initialEstimate, mat
                     />
                   </td>
 
-                  {/* Calculated Qty */}
-                  <td className="p-2 text-right">{quantity}</td>
+                  {/* Quantity (calculated only, no input) */}
+                  <td className="p-2 text-right">
+                    {quantity.toFixed(2)}
+                  </td>
 
-                  {/* Unit Price */}
+                  {/* Unit Price input */}
                   <td className="p-2 text-right">
                     <Controller
                       name={`${base}.unitPrice`}
                       control={control}
+                      defaultValue={Number(item.unitPrice || 0)}
                       render={({ field }) => (
                         <Input
                           {...field}
                           type="number"
-                          className="h-8 px-2 text-right"
                           step="0.01"
+                          className="h-8 px-2 text-right"
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       )}
                     />
                   </td>
 
-                  {/* Total */}
+                  {/* Total (live preview) */}
                   <td className="p-2 text-right font-medium">
                     {formatCurrency(quantity * unitPrice)}
                   </td>

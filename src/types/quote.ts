@@ -1,10 +1,11 @@
 export type QuoteItem = {
   optionLabel?: string // Used to group by Option
+  id: string // ✅ required for form field keys
   label: string
   type: 'material' | 'equipment' | 'other'
   description: string
   quantity: number
-  unit?: string
+  unit?: number
   unitCost?: number
   unitPrice: number
   total: number
